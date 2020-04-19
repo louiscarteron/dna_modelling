@@ -14,6 +14,17 @@ str2nuc = {
   'C': 3,
 }
 
+def generateRandomSequence():
+  rand_oligo = [[randint(0, 3) for i in range(140)] for j in range(5)]
+
+  str_oligos = [''.join([nuc2str[s] for s in oligo]) for oligo in rand_oligo]
+
+  with open("input.txt", "w") as f:
+    for oligo in str_oligos:
+
+      f.write("%s\n" % oligo)
+    
+
 def decode_file():
   with open("input.txt") as f:
     str_oligos = f.read().splitlines()
@@ -57,13 +68,37 @@ def getSubNucleotide(nuc):
   # G2A: 0.2  -> 0.67
   # G2T: 0.08 -> 0.26
 
-if nuc == 0:
-  if rand < 0.25:
-    return 3
-  elif rand < 0.75: 
-    return 1
-  else:
-    return 2
+  if nuc == 0:
+    if rand < 0.25:
+      return 3
+    elif rand < 0.75: 
+      return 1
+    else:
+      return 2
+
+  if nuc == 1:
+    if rand < 0.07:
+      return 3
+    elif rand < 0.74:
+      return 0
+    else:
+      return 2
+
+  if nuc == 2:
+    if rand < 0.28:
+      return 1
+    elif rand < 0.85:
+      return 3
+    else:
+      return 0
+
+  if nuc == 3:
+    if rand < 0.175:
+      return 0
+    elif rand < 0.25:
+      return 1
+    else:
+      return 2
 
 
 def synthesis(oligos, del_rate, sub_rate, add_rate):
@@ -119,6 +154,8 @@ def sequence(oligos, fwd_primer, rvs_primer):
 
 
 def main():
+  #generateRandomSequence()
+
   print("Decoding file...")
   raw_oligos = decode_file()
 
