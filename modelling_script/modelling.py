@@ -47,11 +47,14 @@ def encode_file(oligos):
 def pcr(oligos, cycles=10):
   pass
 
+# Function to get the substituting nucleotide based on probabilities.
+# TODO: Check if correct from the paper. 
 def getSubNucleotide(nuc):
   rand = random()
 
   # TODO: Figure out how to get these mappings to work correctly. 
-
+  # TODO: Clean up this mess of a code and make sure the numbers are correct. 
+  
   # A2C: 0.05 -> 0.25
   # A2G: 0.1  -> 0.5
   # A2T: 0.05 -> 0.25
@@ -122,9 +125,6 @@ def synthesis(oligos, del_rate, sub_rate, add_rate):
       new_nuc = nuc
 
       if random() < sub_rate:
-        # Needs to be a new nuc based on conditional probability.
-        # Figure 4 of paper TODO Create lookup table for the condition probability. 
-        # C2T
         new_nuc = getSubNucleotide(nuc)
 
         sub_counter += 1
@@ -146,7 +146,7 @@ def synthesis(oligos, del_rate, sub_rate, add_rate):
 
   return syn_oligos
 
-def storage(oligos, time=0):
+def storage(oligos, time=0, sub_rate):
   pass
 
 def sequence(oligos, fwd_primer, rvs_primer):
