@@ -54,7 +54,7 @@ def getSubNucleotide(nuc):
 
   # TODO: Figure out how to get these mappings to work correctly. 
   # TODO: Clean up this mess of a code and make sure the numbers are correct. 
-  
+
   # A2C: 0.05 -> 0.25
   # A2G: 0.1  -> 0.5
   # A2T: 0.05 -> 0.25
@@ -103,7 +103,7 @@ def getSubNucleotide(nuc):
     else:
       return 2
 
-
+# TODO: Account for termination factor of 0.05% at every iteration. Start of inner loop. 
 def synthesis(oligos, del_rate, sub_rate, add_rate):
   syn_oligos = []
   
@@ -149,7 +149,7 @@ def synthesis(oligos, del_rate, sub_rate, add_rate):
 def storage(oligos, time=0, sub_rate):
   pass
 
-def sequence(oligos, fwd_primer, rvs_primer):
+def sequence(oligos):
   pass
 
 
