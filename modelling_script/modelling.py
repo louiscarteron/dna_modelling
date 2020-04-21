@@ -1,5 +1,35 @@
 from random import random, randint # soloq teammates btw 
 
+high_pr = {
+  'sub_rate': 0.005,
+  'add_rate': ,
+  'del_rate': ,
+}
+
+low_pr = {
+  'sub_rate': ,
+  'add_rate': ,
+  'del_rate': ,
+}
+
+erlich = {
+  'sub_rate': ,
+  'add_rate': ,
+  'del_rate': ,
+}
+
+goldman = {
+  'sub_rate': ,
+  'add_rate': ,
+  'del_rate': ,
+}
+
+high_pr4t = {
+  'sub_rate': ,
+  'add_rate': ,
+  'del_rate': ,
+}
+
 nuc2str = {
   0: 'A',
   1: 'G',
