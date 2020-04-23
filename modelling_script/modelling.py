@@ -176,8 +176,10 @@ def synthesis(oligos, del_rate, sub_rate, add_rate):
 
   return syn_oligos
 
-def storage(oligos, time=0, sub_rate):
-  pass
+# Time is in years to keep units consistent. 
+def storage(oligos, time=0):
+  half_life = 521
+  # Probably need to just guess the decay rate and see how to go about with it at this rate. 
 
 def sequence(oligos):
   pass
