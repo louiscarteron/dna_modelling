@@ -1,5 +1,7 @@
-from random import random, randint # soloq teammates btw 
+from random import random, randint
+import math
 
+'''
 high_pr = {
   'sub_rate': 0.005,
   'add_rate': ,
@@ -29,6 +31,8 @@ high_pr4t = {
   'add_rate': ,
   'del_rate': ,
 }
+'''
+
 
 nuc2str = {
   0: 'A',
@@ -177,8 +181,38 @@ def synthesis(oligos, del_rate, sub_rate, add_rate):
   return syn_oligos
 
 # Time is in years to keep units consistent. 
-def storage(oligos, time=0):
+def storage(oligos, time, redundancy):
   half_life = 521
+
+  dt = 1
+
+  # Probability of one nucleotide decaying in a time frame (1 year)
+  r = math.log(2) / 521 
+
+  final_oligos = oligos.copy()
+
+  for oligo in final_oligos:
+
+    t = 0
+    decay = 0
+
+    while t < time:
+
+      for i in oligo:
+        
+        rnd = random()
+
+        if rnd < r:
+          oligo.remove(i)
+          decay += 1
+
+      t += dt
+
+    print(decay)
+
+  return final_oligos
+
+
   # Probably need to just guess the decay rate and see how to go about with it at this rate. 
 
 def sequence(oligos):
@@ -191,19 +225,17 @@ def main():
   print("Decoding file...")
   raw_oligos = decode_file()
 
-  print("Synthesising oligos...")
-  syn_oligos = synthesis(raw_oligos, 0.01, 0.01, 0.01)
-  
-  encode_file(syn_oligos)
+  #print("Synthesising oligos...")
+  #syn_oligos = synthesis(raw_oligos, 0.01, 0.01, 0.01)
 
-  return
+  #print("Simulating storage...")
+  stg_oligos = storage(raw_oligos, 521, 1)
 
-  print("Simulating storage...")
-  str_oligos = storage(syn_oligos, 100)
-
+  print(stg_oligos)
+  return 
 
   print("Applying PCR...")
-  pcr_oligos = pcr(str_oligos)
+  pcr_oligos = pcr(stg_oligos)
 
 
   print("Sequencing stored oligos...")
