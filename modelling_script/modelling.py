@@ -1,5 +1,6 @@
 from random import random, randint
 import math
+import collections
 
 '''
 high_pr = {
@@ -78,8 +79,6 @@ def encode_file(oligos):
 
       f.write("%s\n" % oligo)
 
-def pcr(oligos, cycles=10):
-  pass
 
 # Function to get the substituting nucleotide based on probabilities.
 # TODO: Check if correct from the paper. 
@@ -180,7 +179,89 @@ def synthesis(oligos, del_rate, sub_rate, add_rate):
 
   return syn_oligos
 
+
+def pcr(oligos, cycles=10):
+  pass
+
+
+# Validate an oligo to check if valid G-C content and correct homopolymers. 
+def validateOligo(oligo):
+  gcCount = 0
+
+  nucHistory = [] # Need to make max size of 4 (max of 3 homopolymers)
+
+  for o in oligo:
+
+    if o == 1 or o == 3:
+      gcCount += 1
+
+    if len(nucHistory) == 4:
+      nucHistory.pop(0)
+    
+    nucHistory.append(o)
+
+    if len(nucHistory) == 4 and nucHistory.count(nucHistory[0]) == len(nucHistory):
+      return False
+
+  return (gcCount / len(oligo) > 0.45) and (gcCount / len(oligo) < 0.55)
+
+# Generates a legal Oligo that satisfies 45-55% G-C content and no more than 3 homopolymers.
+def generateLegalOligo(length):
+
+  isValid = False
+  oligo = []
+
+  #tempCount = 0
+
+  while(not isValid):
+    oligo = [randint(0, 3) for i in range(length)]
+    isValid = validateOligo(oligo)
+
+    #tempCount += 1
+  
+  #print(f'Had to iterate {tempCount} times to get a valid oligo')
+
+  return oligo
+
+def generateRandomOligos(length, total):
+  oligos = [generateLegalOligo(113) for i in range(total)]
+
+  str_oligos = [''.join([nuc2str[s] for s in oligo]) for oligo in oligos]
+
+  with open("input.txt", "w") as f:
+    for oligo in str_oligos:
+
+      f.write("%s\n" % oligo)
+
+  return oligos
+
+
+
+
+
+def monteCarloDecaySimulation(oligos, decayEvents):
+
+  default_length = len(oligos[0])
+
+  for i in range(decayEvents):
+
+    decayed_oligo_index = randint(0, len(oligos))
+
+    decayed_oligo = oligos[decayed_oligo_index]
+    
+    # TODO: Need to account for broken strands 
+    if len(decayed_oligo) == default_length:
+      break_point = randint(1, default_length - 1)
+      new_oligo = [decayed_oligo[:break_point], decayed_oligo[break_point:]]
+
+      oligos[decayed_oligo_index] = new_oligo
+
+    else:
+      print("Should have broken an already broken strand")
+
+
 # Time is in years to keep units consistent. 
+# Breaks a strand in 2, meaning it can't be applified in the PCR stage. 
 def storage(oligos, time, redundancy):
   half_life = 521
 
@@ -191,36 +272,60 @@ def storage(oligos, time, redundancy):
 
   final_oligos = oligos.copy()
 
-  for oligo in final_oligos:
+  t = 0
+  decay = 0
 
-    t = 0
-    decay = 0
+  while t < time:
 
-    while t < time:
+    rnd = random()
 
-      for i in oligo:
-        
-        rnd = random()
+    if rnd < r:
 
-        if rnd < r:
-          oligo.remove(i)
-          decay += 1
+      monteCarloDecaySimulation(final_oligos, 2)
 
-      t += dt
+      decay += 1
 
-    print(decay)
+    t += dt
+
+  print(decay)
 
   return final_oligos
-
-
-  # Probably need to just guess the decay rate and see how to go about with it at this rate. 
 
 def sequence(oligos):
   pass
 
 
+def getOligoLengths(item):
+  if (any(isinstance(i, list) for i in item)):
+    return [getOligoLengths(i) for i in item]
+  else:
+    return len(item)
+
+# Helper to flatten a list [a, [b, c]] to [a, b, c]
+def flatten(x):
+  if isinstance(x, collections.Iterable):
+      return [a for i in x for a in flatten(i)]
+  else:
+      return [x]
+
+# Helper to get frequency of each oligo length after storage. 
+def getDecayInformation(oligos):
+
+  lengths = flatten(getOligoLengths(oligos))
+
+  freq = {}
+
+  for i in set(lengths):
+    freq[i] = lengths.count(i)
+
+  print(freq)
+
 def main():
-  #generateRandomSequence()
+
+  # Used to generate 100 random oligos 
+  #oligos = generateRandomOligos(113, 100)
+  #print(len(oligos))
+
 
   print("Decoding file...")
   raw_oligos = decode_file()
@@ -228,10 +333,10 @@ def main():
   #print("Synthesising oligos...")
   #syn_oligos = synthesis(raw_oligos, 0.01, 0.01, 0.01)
 
-  #print("Simulating storage...")
+  print("Simulating storage...")
   stg_oligos = storage(raw_oligos, 521, 1)
 
-  print(stg_oligos)
+  getDecayInformation(stg_oligos)
   return 
 
   print("Applying PCR...")
