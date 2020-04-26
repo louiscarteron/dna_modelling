@@ -49,6 +49,8 @@ str2nuc = {
   'C': 3,
 }
 
+base_oligo_length = 113
+
 def generateRandomSequence():
   rand_oligo = [[randint(0, 3) for i in range(140)] for j in range(5)]
 
@@ -224,7 +226,7 @@ def generateLegalOligo(length):
   return oligo
 
 def generateRandomOligos(length, total):
-  oligos = [generateLegalOligo(113) for i in range(total)]
+  oligos = [generateLegalOligo(base_oligo_length) for i in range(total)]
 
   str_oligos = [''.join([nuc2str[s] for s in oligo]) for oligo in oligos]
 
@@ -241,8 +243,6 @@ def generateRandomOligos(length, total):
 
 def monteCarloDecaySimulation(oligos, decayEvents):
 
-  default_length = len(oligos[0])
-
   for i in range(decayEvents):
 
     decayed_oligo_index = randint(0, len(oligos))
@@ -250,8 +250,8 @@ def monteCarloDecaySimulation(oligos, decayEvents):
     decayed_oligo = oligos[decayed_oligo_index]
     
     # TODO: Need to account for broken strands 
-    if len(decayed_oligo) == default_length:
-      break_point = randint(1, default_length - 1)
+    if len(decayed_oligo) > 10:
+      break_point = randint(1, base_oligo_length - 1)
       new_oligo = [decayed_oligo[:break_point], decayed_oligo[break_point:]]
 
       oligos[decayed_oligo_index] = new_oligo
@@ -280,8 +280,8 @@ def storage(oligos, time, redundancy):
     rnd = random()
 
     if rnd < r:
-
-      monteCarloDecaySimulation(final_oligos, 2)
+      # 5 is number of decay events to be simulated. Can be changed to fit different environments (hot, cold etc)
+      monteCarloDecaySimulation(final_oligos, 5)
 
       decay += 1
 
@@ -323,18 +323,19 @@ def getDecayInformation(oligos):
 def main():
 
   # Used to generate 100 random oligos 
-  #oligos = generateRandomOligos(113, 100)
+  #oligos = generateRandomOligos(base_oligo_length, 100)
   #print(len(oligos))
 
 
   print("Decoding file...")
   raw_oligos = decode_file()
 
-  #print("Synthesising oligos...")
-  #syn_oligos = synthesis(raw_oligos, 0.01, 0.01, 0.01)
+  print("Synthesising oligos...")
+  syn_oligos = synthesis(raw_oligos, 0.01, 0.01, 0.01)
 
+  
   print("Simulating storage...")
-  stg_oligos = storage(raw_oligos, 521, 1)
+  stg_oligos = storage(syn_oligos, 521, 1)
 
   getDecayInformation(stg_oligos)
   return 
