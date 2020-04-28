@@ -1,39 +1,9 @@
 from random import random, randint
 import math
 import collections
+import data_config
 
-'''
-high_pr = {
-  'sub_rate': 0.005,
-  'add_rate': ,
-  'del_rate': ,
-}
-
-low_pr = {
-  'sub_rate': ,
-  'add_rate': ,
-  'del_rate': ,
-}
-
-erlich = {
-  'sub_rate': ,
-  'add_rate': ,
-  'del_rate': ,
-}
-
-goldman = {
-  'sub_rate': ,
-  'add_rate': ,
-  'del_rate': ,
-}
-
-high_pr4t = {
-  'sub_rate': ,
-  'add_rate': ,
-  'del_rate': ,
-}
-'''
-
+debug = True
 
 nuc2str = {
   0: 'A',
@@ -139,14 +109,20 @@ def getSubNucleotide(nuc):
       return 2
 
 # TODO: Account for termination factor of 0.05% at every iteration. Start of inner loop. 
-def synthesis(oligos, del_rate, sub_rate, add_rate):
+def synthesis(oligos, method):
   syn_oligos = []
+
+  sub_rate, ins_rate, del_rate = method.values()
+
+  total_sub = 0
+  total_ins = 0
+  total_del = 0
   
   # Going through each oligo to synthesis
   for i, oligo in enumerate(oligos):
 
     sub_counter = 0
-    add_counter = 0
+    ins_counter = 0
     del_counter = 0
 
     new_oligo = []
@@ -164,20 +140,37 @@ def synthesis(oligos, del_rate, sub_rate, add_rate):
 
         sub_counter += 1
 
-      elif random() < add_rate:
+      elif random() < ins_rate:
         new_oligo.append(0) # Adding new nucleotide. TODO: need to choose which one to add from condition probability distrubution. 
-        add_counter += 1
+        ins_counter += 1
 
       elif random() < del_rate:
         del_counter += 1
+        # About to delete the nucleotide, so we can just ignore it and not add it to the new oligo
         continue
       
       new_oligo.append(new_nuc)
 
-    print(f'Sub counter for olgio {i}: {sub_counter}')
-    print(f'Add counter for olgio {i}: {add_counter}')
-    print(f'Del counter for olgio {i}: {del_counter}')
+    if debug:
+
+      print(f'Sub counter for olgio {i}: {sub_counter}')
+      print(f'Ins counter for olgio {i}: {ins_counter}')
+      print(f'Del counter for olgio {i}: {del_counter}')
+
     syn_oligos.append(new_oligo)
+
+    # Used to track metrics 
+    total_sub += sub_counter
+    total_ins += ins_counter
+    total_del += del_counter
+
+  if debug:
+
+    number_of_nuc = base_oligo_length * len(oligos)
+
+    print(f'Total sub events: {total_sub}. Proportion is: {total_sub / number_of_nuc}. Target is: {sub_rate}')
+    print(f'Total ins events: {total_ins}. Proportion is: {total_ins / number_of_nuc}. Target is: {ins_rate}')
+    print(f'Total del events: {total_del}. Proportion is: {total_del / number_of_nuc}. Target is: {del_rate}')
 
   return syn_oligos
 
@@ -287,7 +280,8 @@ def storage(oligos, time, redundancy):
 
     t += dt
 
-  print(decay)
+  if debug:
+    print(f'Number of decay events: {decay}')
 
   return final_oligos
 
@@ -331,8 +325,7 @@ def main():
   raw_oligos = decode_file()
 
   print("Synthesising oligos...")
-  syn_oligos = synthesis(raw_oligos, 0.01, 0.01, 0.01)
-
+  syn_oligos = synthesis(raw_oligos, data_config.average)
   
   print("Simulating storage...")
   stg_oligos = storage(syn_oligos, 521, 1)
