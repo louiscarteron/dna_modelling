@@ -1,57 +1,173 @@
 from random import random
 
+'''
+str2nuc = {
+  'A': 0,
+  'G': 1,
+  'T': 2,
+  'C': 3,
+}
+'''
+
+high_pr = {
+  0: {
+    0.35: 3,
+    0.9: 1,
+    1: 2
+  },
+  1: {
+    0.18: 2,
+    0.25: 3,
+    1: 0
+  }, 
+  2: {
+    0.12: 1,
+    0.88: 3,
+    1: 0
+  },
+  3: {
+    0.14: 0,
+    0.2: 1,
+    1: 2
+  }
+}
+
+low_pr = {
+  0: {
+    0.21: 3,
+    0.79: 1,
+    1: 2
+  }, 
+  1: {
+    0.26: 2,
+    0.3: 3,
+    1: 0
+  }, 
+  2: {
+    0.14: 1,
+    0.86: 3,
+    1: 0
+  },
+  3: {
+    0.18: 0,
+    0.21: 1,
+    1: 2
+  }
+}
+
+'''
+erlich = {
+  0: {
+    : 3,
+    : 1,
+    1: 2
+  }, 
+  1: {
+    : 2,
+    : 3,
+    1: 0
+  }, 
+  2: {
+    : 1,
+    : 3,
+    1: 0
+  },
+  3: {
+    : 0,
+    : 1,
+    1: 2
+  }
+}
+
+goldman = {
+  0: {
+    : 3,
+    : 1,
+    1: 2
+  }, 
+  1: {
+    : 2,
+    : 3,
+    1: 0
+  }, 
+  2: {
+    : 1,
+    : 3,
+    1: 0
+  },
+  3: {
+    : 0,
+    : 1,
+    1: 2
+  }
+}
+
+high_pr4t = {
+  0: {
+    : 3,
+    : 1,
+    1: 2
+  }, 
+  1: {
+    : 2,
+    : 3,
+    1: 0
+  }, 
+  2: {
+    : 1,
+    : 3,
+    1: 0
+  },
+  3: {
+    : 0,
+    : 1,
+    1: 2
+  }
+}
+'''
+
+average = {
+  0 : {
+    0.25: 3,
+    0.75: 1,
+    1: 2
+  },
+  1 : {
+    0.07: 3,
+    0.74: 0,
+    1: 2
+  },
+  2 : {
+    0.28: 1,
+    0.85: 3,
+    1: 0
+  },
+  3 : {
+    0.175: 0,
+    0.25: 1,
+    1: 2
+  }
+}
+
+method_lookup = {
+  'high_pr': high_pr,
+  'low_pr': low_pr,
+  'erlich': {},
+  'goldman': {},
+  'high_pr4t': {},
+  'average': average
+}
+
 # Function to get the substituting nucleotide based on probabilities.
 # TODO: Check if correct from the paper. 
-def getSubNucleotide(nuc):
+def getSubNucleotide(nuc, method):
   rand = random()
 
-  # TODO: Figure out how to get these mappings to work correctly. 
-  # TODO: Clean up this mess of a code and make sure the numbers are correct. 
+  method_probs = method_lookup[method]
 
-  # A2C: 0.05 -> 0.25
-  # A2G: 0.1  -> 0.5
-  # A2T: 0.05 -> 0.25
+  probabilities = method_probs[nuc]
 
-  # T2G: 0.05  -> 0.28
-  # T2C: 0.1   -> 0.57
-  # T2A: 0.025 -> 0.15
+  for p in probabilities:
+    if rand < p:
+      return probabilities[p]
 
-  # C2A: 0.07 -> 0.175
-  # C2G: 0.03 -> 0.075
-  # C2T: 0.3  -> 0.75
-
-  # G2C: 0.02 -> 0.07
-  # G2A: 0.2  -> 0.67
-  # G2T: 0.08 -> 0.26
-
-  if nuc == 0:
-    if rand < 0.25:
-      return 3
-    elif rand < 0.75: 
-      return 1
-    else:
-      return 2
-
-  if nuc == 1:
-    if rand < 0.07:
-      return 3
-    elif rand < 0.74:
-      return 0
-    else:
-      return 2
-
-  if nuc == 2:
-    if rand < 0.28:
-      return 1
-    elif rand < 0.85:
-      return 3
-    else:
-      return 0
-
-  if nuc == 3:
-    if rand < 0.175:
-      return 0
-    elif rand < 0.25:
-      return 1
-    else:
-      return 2

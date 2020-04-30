@@ -2,6 +2,7 @@ from random import random, randint
 import math
 import collections
 import data_config
+import substitution
 
 debug = True
 
@@ -314,12 +315,26 @@ def getDecayInformation(oligos):
 
   print(freq)
 
+def test():
+
+  freq = {}
+
+  temp_array = [substitution.getSubNucleotide(3, 'average') for i in range(0, 100)]
+
+  for i in set(temp_array):
+    freq[i] = temp_array.count(i)
+
+  print(freq)
+
 def main():
 
   # Used to generate 100 random oligos 
   #oligos = generateRandomOligos(base_oligo_length, 100)
   #print(len(oligos))
 
+  test()
+
+  return
 
   print("Decoding file...")
   raw_oligos = decode_file()
