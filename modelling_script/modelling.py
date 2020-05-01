@@ -319,7 +319,7 @@ def test():
 
   freq = {}
 
-  temp_array = [substitution.getSubNucleotide(3, 'average') for i in range(0, 100)]
+  temp_array = [substitution.getSubNucleotide(3, 'high_pr4t') for i in range(0, 100)]
 
   for i in set(temp_array):
     freq[i] = temp_array.count(i)
