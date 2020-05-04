@@ -119,8 +119,70 @@ def synthesis(oligos, method):
   return syn_oligos
 
 
+# Data taken from https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0169774
+# Using data from Pacific Biosciences RSII
+
 def pcr(oligos, cycles=10):
-  pass
+
+  pcr_oligos = []
+
+  total_sub = 0
+  total_ins = 0
+  total_del = 0
+
+  for i in range(cycles):
+    
+    for oligo in oligos:
+
+      new_oligo = []
+
+      sub_counter = 0
+      ins_counter = 0
+      del_counter = 0
+
+      for nuc in oligo: 
+
+        rand = random()
+
+        new_nuc = nuc
+
+        # Error happened
+        if (rand < 1.8e-4):
+
+          error_type = random()
+
+          # Substitution error
+          if (error_type < 0.973):
+            sub_counter += 1
+          # Deletion error
+          elif (error_type < 0.99):
+            del_counter += 1
+            continue
+          
+          # Addition error
+          else:
+            ins_counter += 1
+
+        new_oligo.append(new_nuc)
+
+      pcr_oligos.append(new_oligo)
+
+      total_sub += sub_counter
+      total_ins += ins_counter
+      total_del += del_counter
+
+  if debug:
+
+    number_of_nuc = base_oligo_length * len(oligos)
+
+    print(f'Total sub events: {total_sub}. Proportion is: {total_sub / number_of_nuc}')
+    print(f'Total ins events: {total_ins}. Proportion is: {total_ins / number_of_nuc}')
+    print(f'Total del events: {total_del}. Proportion is: {total_del / number_of_nuc}')
+
+
+  return pcr_oligos
+
+
 
 
 # Validate an oligo to check if valid G-C content and correct homopolymers. 
@@ -275,12 +337,14 @@ def main():
   #oligos = generateRandomOligos(base_oligo_length, 100)
   #print(len(oligos))
 
-  test()
-
-  return
+  #test()
 
   print("Decoding file...")
   raw_oligos = decode_file()
+
+  pcr(raw_oligos, 10)
+
+  return
 
   print("Synthesising oligos...")
   syn_oligos = synthesis(raw_oligos, data_config.average)

@@ -169,3 +169,23 @@ def getSubNucleotide(nuc, method):
     if rand < p:
       return probabilities[p]
 
+'''
+str2nuc = {
+  'A': 0,
+  'G': 1,
+  'T': 2,
+  'C': 3,
+}
+'''
+
+def getSubNucleotideForPCR(nuc):
+  rand = random()
+
+  # A or T
+  if nuc % 2 == 0:
+    if rand < 0.66:
+      return (nuc + 1) % 4
+
+    elif rand < 0.76:
+      return 0
+
