@@ -153,6 +153,7 @@ def pcr(oligos, cycles=10):
 
           # Substitution error
           if (error_type < 0.973):
+            new_nuc = substitution.getSubNucleotideForPCR(nuc)
             sub_counter += 1
           # Deletion error
           elif (error_type < 0.99):

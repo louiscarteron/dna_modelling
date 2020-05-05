@@ -178,14 +178,29 @@ str2nuc = {
 }
 '''
 
+
+
 def getSubNucleotideForPCR(nuc):
   rand = random()
 
   # A or T
   if nuc % 2 == 0:
-    if rand < 0.66:
+    if rand < 0.85:
       return (nuc + 1) % 4
 
-    elif rand < 0.76:
-      return 0
+    elif rand < 0.97:
+      return (nuc + 2) % 4
 
+    else:
+      return (nuc + 3) % 4
+  
+  # G or C
+  else:
+    if rand < 0.84:
+      return (nuc + 3) % 4
+    
+    elif rand < 0.91:
+      return (nuc + 2) % 4
+    
+    else:
+      return (nuc + 1) % 4
