@@ -3,3 +3,5 @@
 *.fast5
 
 **/fast5
+
+**/data
