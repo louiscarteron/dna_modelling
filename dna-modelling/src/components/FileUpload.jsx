@@ -9,6 +9,9 @@ import Card from '@material-ui/core/Card';
 import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 
+import WebWorker from "../scripts/workerSetup";
+import temp from "../scripts/test";
+
 const useStyles = makeStyles(theme => ({
   textWrapper: {
     margin: theme.spacing(1),
@@ -68,10 +71,21 @@ const FileUpload = (props) => {
 
   }, []);
 
-  const { getRootProps, getInputProps } = useDropzone({onDrop});
+  const { getRootProps, getInputProps } = useDropzone({onDrop: onDrop, noDrag: true});
 
   const runSimulation = () => {
-    console.log("Simulation should run");
+    if (window.Worker) {
+      const worker = new WebWorker(temp);
+      worker.postMessage("temp data 123");
+
+      worker.onmessage = (e) => {
+        console.log("Recieved message");
+        console.log(e.data);
+      }
+
+    } else {
+      console.log("Your browser doesn't support web workers.");
+    }
   }
 
   return (
@@ -83,7 +97,7 @@ const FileUpload = (props) => {
         <TextField
           className={classes.textField}
           rowsMax={20}
-          placeholder="Oligos"
+          placeholder="Drag file here or upload"
           multiline
           value={inputs}
           variant="outlined"
