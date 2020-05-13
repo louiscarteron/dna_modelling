@@ -9,8 +9,7 @@ import Card from '@material-ui/core/Card';
 import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 
-import WebWorker from "../scripts/workerSetup";
-import temp from "../scripts/test";
+import ModelWorker from '../scripts/modelling.worker.js';
 
 const useStyles = makeStyles(theme => ({
   textWrapper: {
@@ -61,7 +60,6 @@ const FileUpload = (props) => {
       // TODO: Actually do something with the data. 
       reader.onload = () => {
         const bnyStr = reader.result;
-        console.log(bnyStr);
         setInputs(bnyStr);
       }
 
@@ -75,8 +73,8 @@ const FileUpload = (props) => {
 
   const runSimulation = () => {
     if (window.Worker) {
-      const worker = new WebWorker(temp);
-      worker.postMessage("temp data 123");
+      const worker = new ModelWorker();
+      worker.postMessage(inputs);
 
       worker.onmessage = (e) => {
         console.log("Recieved message");
@@ -84,6 +82,7 @@ const FileUpload = (props) => {
       }
 
     } else {
+      //Todo: Run blocking script instead of non-blocking
       console.log("Your browser doesn't support web workers.");
     }
   }

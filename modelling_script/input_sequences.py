@@ -11,6 +11,9 @@ def process_csv(path):
 
   return data
 
+def remove_primers(oligos):
+  
+
 def main():
   oligos = process_csv("data/3xr6.csv")
   print(len(oligos))
