@@ -7,10 +7,10 @@ onmessage = function(e) {
   const splitOligos = processInput(e.data);
   const encodedOligos = encodeOligos(splitOligos);
 
-  synthesis(encodedOligos);
+  const synOligos = synthesis(encodedOligos);
 
-  const decodedOligos = decodeOligos(encodedOligos);
-  console.log(decodedOligos[0]);
+  const decodedOligos = decodeOligos(synOligos);
+  console.log(decodedOligos);
   
   postMessage("Finished in worker");
 }
@@ -34,6 +34,7 @@ const synthesis = (oligos) => {
   // Needed to access loop index 
   for (const [i, oligo] of oligos.entries()) {
 
+    //TODO: Post this to the main thread to get a progress bar working. 
     console.log(i);
 
     let insCounter = 0, subCounter = 0, delCounter = 0;
@@ -44,14 +45,14 @@ const synthesis = (oligos) => {
       
       let newNuc = nuc;
 
-      if (Math.random() < insRate) {
+      if (Math.random() < subRate) {
         newNuc = getSubNucleotide(nuc, 'average');
-        insCounter++;
+        subCounter++;
       }
 
-      else if (Math.random() < subRate) {
+      else if (Math.random() < insRate) {
         newOligo.push(getInsNucleotide(nuc, 'average'));
-        subCounter++;
+        insCounter++;
       }
       
       else if (Math.random() < delRate) {
@@ -82,7 +83,7 @@ const synthesis = (oligos) => {
     deletions: totalDel
   };
 
-  console.log(errorReport);
-
   postMessage("Finished Synthesis");
+
+  return synOligos;
 }
