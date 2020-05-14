@@ -1,6 +1,7 @@
 import { processInput, encodeOligos, decodeOligos } from "./utils";
 import { getSubNucleotide, getInsNucleotide } from "./synthesisUtils";
 import { decaySimulation } from "./storageUtils";
+import { getSubNucleotidePCR } from "./pcrUtils";
 
 onmessage = function(e) {
   console.log('Worker: Message received from main script, in modelling.worker file');
@@ -13,6 +14,8 @@ onmessage = function(e) {
   const synOligos = synthesis(encodedOligos);
 
   const storedOligos = storage(synOligos, 521, baseOligoLength);
+
+  const pcrOligos = pcr(storedOligos, 60);
 
   const decodedOligos = decodeOligos(synOligos);
   
@@ -121,4 +124,57 @@ const storage = (oligos, time, baseOligoLength) => {
   console.log(`Number of decay events was ${decay}`);
 
   return finalOligos;
+}
+
+//TODO: If strand is split, can not apply pcr to it. Need to apply logic to do so and report in statistics. 
+const pcr = (oligos, cycles = 10) => {
+
+  const pcrOligos = [];
+
+  let subCounter = 0, insCounter = 0, delCounter = 0;
+
+  for (let i = 0; i < cycles; i++) {
+
+    for (const oligo of oligos) {
+
+      const newOligo = [];
+
+      for (const nuc of oligo) {
+
+        const rand = Math.random();
+
+        let newNuc = nuc;
+
+        if (rand < 1.8e-4) {
+
+          const errorType = Math.random();
+          if (errorType < 0.973) {
+            newNuc = getSubNucleotidePCR(nuc);
+            subCounter++;
+          } else if (errorType < 0.99) {
+            delCounter++;
+            continue;
+          } else {
+            //TODO: need to do insertion;
+            insCounter++;
+          }
+
+        }
+
+        newOligo.push(newNuc);
+
+      }
+
+      pcrOligos.push(newOligo);
+
+    }
+
+  }
+
+  console.log(`Subs: ${subCounter}`);
+  console.log(`Ins: ${insCounter}`);
+  console.log(`Del: ${delCounter}`);
+
+  return pcrOligos;
+
 }
