@@ -26,7 +26,7 @@ export const encodeOligos = (oligos) => {
 }
 
 export const decodeOligos = (oligos) => {
-  console.log("here");
+  
   return oligos.map(oligo => oligo.map(o => nuc2str[o]).join(''));
   
 }

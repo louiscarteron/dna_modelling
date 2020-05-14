@@ -9,15 +9,29 @@ onmessage = function(e) {
   const splitOligos = processInput(e.data);
   const encodedOligos = encodeOligos(splitOligos);
 
+  console.log(`Encoded length: ${encodedOligos.length}`);
+
   const baseOligoLength = encodedOligos[0].length;
 
   const synOligos = synthesis(encodedOligos);
 
+  console.log(`Syn length: ${synOligos.length}`);
+
   const storedOligos = storage(synOligos, 521, baseOligoLength);
+
+  console.log(`Storage length: ${storedOligos.length}`);
 
   const pcrOligos = pcr(storedOligos, 60);
 
-  const decodedOligos = decodeOligos(synOligos);
+  console.log(`PCR length: ${pcrOligos.length}`);
+
+  const seqOligos = sequencing(pcrOligos);
+
+  console.log(`Sequencing length: ${seqOligos.length}`);
+
+  const decodedOligos = decodeOligos(seqOligos);
+
+  console.log(`Decoded length: ${decodedOligos.length}`);
   
   postMessage("Finished in worker");
 }
@@ -42,7 +56,7 @@ const synthesis = (oligos) => {
   for (const [i, oligo] of oligos.entries()) {
 
     //TODO: Post this to the main thread to get a progress bar working. 
-    console.log(i);
+    //console.log(i);
 
     let insCounter = 0, subCounter = 0, delCounter = 0;
 
@@ -127,6 +141,7 @@ const storage = (oligos, time, baseOligoLength) => {
 }
 
 //TODO: If strand is split, can not apply pcr to it. Need to apply logic to do so and report in statistics. 
+//TODO: fix error with creating oligos * cycles number of final oligos. Is it really an error?
 const pcr = (oligos, cycles = 10) => {
 
   const pcrOligos = [];
@@ -177,4 +192,10 @@ const pcr = (oligos, cycles = 10) => {
 
   return pcrOligos;
 
+}
+
+const sequencing = (oligos) => {
+  console.log("Should sequence oligos here");
+
+  return oligos;
 }
