@@ -1,5 +1,6 @@
 import { processInput, encodeOligos, decodeOligos } from "./utils";
 import { getSubNucleotide, getInsNucleotide } from "./synthesisUtils";
+import { decaySimulation } from "./storageUtils";
 
 onmessage = function(e) {
   console.log('Worker: Message received from main script, in modelling.worker file');
@@ -7,10 +8,13 @@ onmessage = function(e) {
   const splitOligos = processInput(e.data);
   const encodedOligos = encodeOligos(splitOligos);
 
+  const baseOligoLength = encodedOligos[0].length;
+
   const synOligos = synthesis(encodedOligos);
 
+  const storedOligos = storage(synOligos, 521, baseOligoLength);
+
   const decodedOligos = decodeOligos(synOligos);
-  console.log(decodedOligos);
   
   postMessage("Finished in worker");
 }
@@ -86,4 +90,35 @@ const synthesis = (oligos) => {
   postMessage("Finished Synthesis");
 
   return synOligos;
+}
+
+//TODO: Add capabilities to account for temperature settings to decay faster
+const storage = (oligos, time, baseOligoLength) => {
+  //Half life of DNA in an ideal environment
+  const halfLife = 521;
+
+  const dt = 1;
+
+  const decayRate = Math.log(2) / halfLife;
+
+  const finalOligos = oligos.slice(); // Create copy to modify.
+
+  let t = 0;
+  let decay = 0;
+
+  while (t < time) {
+    const rand = Math.random();
+
+    if (rand < decayRate) {
+      decaySimulation(finalOligos, 5, baseOligoLength);
+      decay++;
+
+    }
+
+    t += dt;
+  }
+
+  console.log(`Number of decay events was ${decay}`);
+
+  return finalOligos;
 }
