@@ -230,7 +230,7 @@ def generateRandomOligos(length, total):
 
   str_oligos = [''.join([nuc2str[s] for s in oligo]) for oligo in oligos]
 
-  with open("input.txt", "w") as f:
+  with open("input2.txt", "w") as f:
     for oligo in str_oligos:
 
       f.write("%s\n" % oligo)
@@ -335,8 +335,9 @@ def test():
 def main():
 
   # Used to generate 100 random oligos 
-  #oligos = generateRandomOligos(base_oligo_length, 100)
+  #oligos = generateRandomOligos(base_oligo_length, 1000)
   #print(len(oligos))
+  #return
 
   #test()
 

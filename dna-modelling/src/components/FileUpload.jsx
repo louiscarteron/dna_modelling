@@ -50,6 +50,8 @@ const FileUpload = (props) => {
 
   const [inputs, setInputs] = useState("");
 
+  const [currentStatus, setStatus] = useState("");
+
   const onDrop = useCallback((acceptedFiles) => {
     acceptedFiles.forEach((file) => {
       const reader = new FileReader();
@@ -77,8 +79,8 @@ const FileUpload = (props) => {
       worker.postMessage(inputs);
 
       worker.onmessage = (e) => {
-        console.log("Recieved message");
-        console.log(e.data);
+        const { status } = e.data;
+        setStatus(status);
       }
 
     } else {
@@ -118,6 +120,7 @@ const FileUpload = (props) => {
         </Button>
 
       </CardActions>
+      Current Status: {currentStatus}
     </Card>
   );
 }

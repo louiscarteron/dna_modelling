@@ -2,43 +2,35 @@ import { processInput, encodeOligos, decodeOligos } from "./utils";
 import { getSubNucleotide, getInsNucleotide } from "./synthesisUtils";
 import { decaySimulation } from "./storageUtils";
 import { getSubNucleotidePCR } from "./pcrUtils";
+import { StatusEnum } from "./modellingStatus";
 
 onmessage = function(e) {
-  console.log('Worker: Message received from main script, in modelling.worker file');
+  postMessage({status: StatusEnum.START});
 
   const splitOligos = processInput(e.data);
   const encodedOligos = encodeOligos(splitOligos);
 
-  console.log(`Encoded length: ${encodedOligos.length}`);
-
   const baseOligoLength = encodedOligos[0].length;
 
+  postMessage({status: StatusEnum.SYNTHESIS});
   const synOligos = synthesis(encodedOligos);
 
-  console.log(`Syn length: ${synOligos.length}`);
-
+  postMessage({status: StatusEnum.STORAGE});
   const storedOligos = storage(synOligos, 521, baseOligoLength);
 
-  console.log(`Storage length: ${storedOligos.length}`);
-
+  postMessage({status: StatusEnum.PCR});
   const pcrOligos = pcr(storedOligos, 60);
 
-  console.log(`PCR length: ${pcrOligos.length}`);
-
+  postMessage({status: StatusEnum.SEQUENCING});
   const seqOligos = sequencing(pcrOligos);
 
-  console.log(`Sequencing length: ${seqOligos.length}`);
-
   const decodedOligos = decodeOligos(seqOligos);
-
-  console.log(`Decoded length: ${decodedOligos.length}`);
   
-  postMessage("Finished in worker");
+  postMessage({status: StatusEnum.FINISH});
 }
 
 //TODO: consider adding report object. probs gonna do it now.
 const synthesis = (oligos) => {
-  postMessage("Starting Synthesis");
 
   const errorReport = {};
 
@@ -103,8 +95,6 @@ const synthesis = (oligos) => {
     substitutions: totalSub,
     deletions: totalDel
   };
-
-  postMessage("Finished Synthesis");
 
   return synOligos;
 }
