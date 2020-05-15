@@ -4,6 +4,8 @@ import { decaySimulation } from "./storageUtils";
 import { getSubNucleotidePCR } from "./pcrUtils";
 import { StatusEnum } from "./modellingStatus";
 
+import levenshtein from "js-levenshtein";
+
 onmessage = function(e) {
   postMessage({status: StatusEnum.START});
 
@@ -16,7 +18,7 @@ onmessage = function(e) {
   const synOligos = synthesis(encodedOligos);
 
   postMessage({status: StatusEnum.STORAGE});
-  const storedOligos = storage(synOligos, 521, baseOligoLength);
+  const storedOligos = storage(synOligos, 1400, baseOligoLength);
 
   postMessage({status: StatusEnum.PCR});
   const pcrOligos = pcr(storedOligos, 60);
@@ -27,6 +29,8 @@ onmessage = function(e) {
   const decodedOligos = decodeOligos(seqOligos);
   
   postMessage({status: StatusEnum.FINISH});
+
+  calculateLevenshteinScore(splitOligos, decodedOligos);
 }
 
 //TODO: consider adding report object. probs gonna do it now.
@@ -188,4 +192,29 @@ const sequencing = (oligos) => {
   console.log("Should sequence oligos here");
 
   return oligos;
+}
+
+const calculateLevenshteinScore = (inputOligos, outputOligos) => {
+
+  console.log(inputOligos.length, outputOligos.length);
+  
+  const distances = [];
+
+  for (let i = 0; i < inputOligos.length; i++) {
+    const score = levenshtein(inputOligos[i], outputOligos[i]);
+
+    if (score > 2) {
+      console.log(inputOligos[i], outputOligos[i]);
+    }
+
+    const temp = {
+      oligo: i,
+      score: score
+    }
+    distances.push(temp);
+  }
+
+  console.table(distances);
+  
+  return;
 }
