@@ -196,6 +196,7 @@ const pcr = (oligos, cycles = 10) => {
 }
 
 //TODO: Do some smart garbage clean up to not make the size of the array blow up. 
+// Probably solve the memory issue with doing some random sampling at the end to get a sub sample. 
 
 const exponentialPCR = (oligos, cycles = 10) => {
 
@@ -206,9 +207,69 @@ const exponentialPCR = (oligos, cycles = 10) => {
     return;
   }
 
-  const pcrOligos = oligos.slice();
+  //const pcrOligos = oligos.slice();
+  const pcrOligos = [];
 
   let subCounter = 0, insCounter = 0, delCounter = 0;
+
+  // Generating PCR in order of input oligos. 
+
+  for (const [index, oligo] of oligos.entries()) {
+  
+    const pcrForOligo = [oligo];
+
+    for (let i = 0; i < cycles; i++) {
+
+      const oligoBuffer = [];
+
+      for (const oligo of pcrForOligo) {
+
+        const newOligo = [];
+
+        for (const nuc of oligo) {
+
+          const rand = Math.random();
+
+          let newNuc = nuc;
+
+          if (rand < 1.8e-4) {
+
+            const errorType = Math.random();
+            if (errorType < 0.973) {
+              newNuc = getSubNucleotidePCR(nuc);
+              subCounter++;
+            } else if (errorType < 0.99) {
+              delCounter++;
+              continue;
+            } else {
+              //TODO: need to do insertion;
+              insCounter++;
+            }
+
+          }
+
+          newOligo.push(newNuc);
+
+        }
+
+        oligoBuffer.push(newOligo);
+
+      }
+
+      pcrForOligo.extend(oligoBuffer);
+
+    }
+
+    pcrOligos[index] = pcrForOligo;
+
+  }
+
+  console.log(pcrOligos.length);
+  console.log(pcrOligos[0].length);
+  console.log(pcrOligos[0].slice(0, 10));
+
+  return; 
+
 
   for (let i = 0; i < cycles; i++) {
 
