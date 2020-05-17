@@ -267,7 +267,7 @@ const exponentialPCR = (oligos, cycles = 10) => {
   console.log(pcrOligos.length);
   console.log(pcrOligos[0].length);
   console.log(pcrOligos[0].slice(0, 10));
-
+  
   return; 
 
 
