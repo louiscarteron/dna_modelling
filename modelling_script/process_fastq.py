@@ -1,11 +1,12 @@
 from Bio import SeqIO
 from statistics import mean
-from Levenshtein import distance
+from Levenshtein import distance, editops
 from csv import reader, DictReader
-from collections import defaultdict
+from collections import defaultdict, Counter
 import json
 
 filename = '/mnt/c/Users/Louis/Documents/DnaModelling/42k_data/output_reads.fastq'
+#filename = 'data/porechop/eins3_data_chopped.fastq'
 
 '''
 Parses the input file 'filename' and filters it based on a length greater than 'length' and a quality score greater than 'score'
@@ -14,7 +15,7 @@ def trim_inputs(length, score):
   input_seq_iterator = SeqIO.parse(filename, "fastq")
   short_seq_iterator = (record for record in input_seq_iterator if len(record.seq) > length and mean(record.letter_annotations['phred_quality']) > score)
 
-  SeqIO.write(short_seq_iterator, "quality_seq_output_qscore13.fastq", "fastq")
+  SeqIO.write(short_seq_iterator, "data/porechop/quality_seq_42k_qscore10.fastq", "fastq")
 
 
 def _read_csv(filepath):
@@ -59,12 +60,16 @@ def match(input_oligos, read_oligos):
       if score < best_score:
         best_score = score
         best_read = r
+
+    edits = editops(i, best_read)
+    counts = Counter(x[0] for x in edits)
     
     report.append({
       'input_oligo': i,
       'match': {
         'score': best_score,
-        'closest_match': best_read
+        'closest_match': best_read,
+        'edits': dict(counts)
       }
     })
 
@@ -76,13 +81,14 @@ def process_report(report):
   print(mean(temp))
 
 def dump_report(report):
-  with open("report.json", "w+") as fp:
+  with open("report_42k_qscore10_1.json", "w+") as fp:
     json.dump(report, fp, indent = 2)
 
 def main():
-  #trim_inputs(90, 13)
+  #trim_inputs(90, 10)
+  #return
   input_oligos = _read_csv("data/3xr6.csv")
-  read_oligos = _read_input("quality_seq_output_qscore13.fastq")
+  read_oligos = _read_input("data/porechop/quality_seq_42k_qscore10.fastq")
   report = match(input_oligos, read_oligos)
   process_report(report)
   dump_report(report)
