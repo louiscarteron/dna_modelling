@@ -40,7 +40,7 @@ onmessage = function(e) {
   
   postMessage({status: StatusEnum.FINISH});
 
-  //calculateLevenshteinScore(splitOligos, decodedOligos);
+  calculateLevenshteinScore(splitOligos, decodedOligos);
 }
 
 //TODO: consider adding report object. probs gonna do it now.
@@ -221,6 +221,7 @@ const exponentialPCR = (oligos, cycles = 10) => {
 
   for (const [index, oligo] of oligos.entries()) {
 
+    // Needed to update main thread on current progress 
     postMessage({status: StatusEnum.PCR, progress: {
       current: index,
       total: totalOligos
@@ -301,15 +302,13 @@ const sequencing = (oligos) => {
 const calculateLevenshteinScore = (inputOligos, outputOligos) => {
 
   console.log(inputOligos.length, outputOligos.length);
-  
+
+  const pcrDups = outputOligos.length / inputOligos.length;
+
   const distances = [];
 
-  for (let i = 0; i < inputOligos.length; i++) {
-    const score = levenshtein(inputOligos[i], outputOligos[i]);
-
-    if (score > 2) {
-      console.log(inputOligos[i], outputOligos[i]);
-    }
+  for (let i = 0; i < outputOligos.length; i++) {
+    const score = levenshtein(inputOligos[~~(i/pcrDups)], outputOligos[i]);
 
     const temp = {
       oligo: i,
@@ -318,7 +317,7 @@ const calculateLevenshteinScore = (inputOligos, outputOligos) => {
     distances.push(temp);
   }
 
-  console.table(distances);
+  console.table(distances.slice(0, 10));
   
   return;
 }
