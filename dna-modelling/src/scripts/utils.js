@@ -30,3 +30,9 @@ export const decodeOligos = (oligos) => {
   return oligos.map(oligo => oligo.map(o => nuc2str[o]).join(''));
   
 }
+
+export const flattenPCR = (pcrOligos) => {
+
+  return pcrOligos.flat()
+  
+}

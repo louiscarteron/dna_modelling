@@ -79,8 +79,12 @@ const FileUpload = (props) => {
       worker.postMessage(inputs);
 
       worker.onmessage = (e) => {
-        const { status } = e.data;
-        setStatus(status);
+        const { status, progress } = e.data;
+        if (progress) {
+          setStatus(`${status} (${progress.current * 100/ progress.total}%)`)
+        } else {
+          setStatus(status);
+        }
       }
 
     } else {

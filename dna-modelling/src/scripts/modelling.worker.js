@@ -1,4 +1,4 @@
-import { processInput, encodeOligos, decodeOligos } from "./utils";
+import { processInput, encodeOligos, decodeOligos, flattenPCR } from "./utils";
 import { getSubNucleotide, getInsNucleotide } from "./synthesisUtils";
 import { decaySimulation } from "./storageUtils";
 import { getSubNucleotidePCR } from "./pcrUtils";
@@ -29,10 +29,12 @@ onmessage = function(e) {
 
   postMessage({status: StatusEnum.PCR});
   //const pcrOligos = pcr(storedOligos, 60);
-  const pcrOligos = exponentialPCR(storedOligos, 40);
+  const pcrOligos = exponentialPCR(storedOligos, 20);
+
+  const flatPcr = flattenPCR(pcrOligos);
 
   postMessage({status: StatusEnum.SEQUENCING});
-  const seqOligos = sequencing(pcrOligos);
+  const seqOligos = sequencing(flatPcr);
 
   const decodedOligos = decodeOligos(seqOligos);
   
@@ -144,7 +146,7 @@ const storage = (oligos, time, baseOligoLength) => {
 
 //TODO: If strand is split, can not apply pcr to it. Need to apply logic to do so and report in statistics. 
 //TODO: fix error with creating oligos * cycles number of final oligos. Is it really an error?
-const pcr = (oligos, cycles = 10) => {
+const pcrLowMemory = (oligos, cycles = 10) => {
 
   const pcrOligos = [];
 
@@ -215,7 +217,14 @@ const exponentialPCR = (oligos, cycles = 10) => {
 
   // Generating PCR in order of input oligos. 
 
+  const totalOligos = oligos.length;
+
   for (const [index, oligo] of oligos.entries()) {
+
+    postMessage({status: StatusEnum.PCR, progress: {
+      current: index,
+      total: totalOligos
+    }})
   
     let pcrForOligo = [oligo];
 
@@ -280,7 +289,7 @@ const exponentialPCR = (oligos, cycles = 10) => {
   console.log(`Ins: ${insCounter}`);
   console.log(`Del: ${delCounter}`);
   
-  return; 
+  return pcrOligos; 
 }
 
 const sequencing = (oligos) => {
