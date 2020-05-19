@@ -3,6 +3,7 @@ import { getSubNucleotide, getInsNucleotide } from "./synthesisUtils";
 import { decaySimulation } from "./storageUtils";
 import { getSubNucleotidePCR } from "./pcrUtils";
 import { StatusEnum } from "./modellingStatus";
+import sampleSize from "lodash/sampleSize";
 
 import levenshtein from "js-levenshtein";
 
@@ -28,7 +29,7 @@ onmessage = function(e) {
 
   postMessage({status: StatusEnum.PCR});
   //const pcrOligos = pcr(storedOligos, 60);
-  const pcrOligos = exponentialPCR(storedOligos, 10);
+  const pcrOligos = exponentialPCR(storedOligos, 40);
 
   postMessage({status: StatusEnum.SEQUENCING});
   const seqOligos = sequencing(pcrOligos);
@@ -203,8 +204,8 @@ const exponentialPCR = (oligos, cycles = 10) => {
   console.info("Using exponential PCR which is very memory intensive.");
 
   if (cycles > 10) {
-    console.warn(`About to apply ${cycles} PCR cycles, resulting in at least ${Math.pow(2, cycles)} oligos. Aborting...`);
-    return;
+    console.warn(`About to apply ${cycles} PCR cycles, resulting in high CPU and Memory usage.`);
+    //return;
   }
 
   //const pcrOligos = oligos.slice();
@@ -216,7 +217,7 @@ const exponentialPCR = (oligos, cycles = 10) => {
 
   for (const [index, oligo] of oligos.entries()) {
   
-    const pcrForOligo = [oligo];
+    let pcrForOligo = [oligo];
 
     for (let i = 0; i < cycles; i++) {
 
@@ -257,6 +258,13 @@ const exponentialPCR = (oligos, cycles = 10) => {
       }
 
       pcrForOligo.extend(oligoBuffer);
+      
+      //TODO: Figure out a good middle ground for max size. 
+      const maxSize = Math.pow(2, 11);
+
+      if (pcrForOligo.length > maxSize) {
+        pcrForOligo = sampleSize(pcrForOligo, maxSize);
+      }
 
     }
 
@@ -267,61 +275,12 @@ const exponentialPCR = (oligos, cycles = 10) => {
   console.log(pcrOligos.length);
   console.log(pcrOligos[0].length);
   console.log(pcrOligos[0].slice(0, 10));
-  
-  return; 
-
-
-  for (let i = 0; i < cycles; i++) {
-
-    console.log(i, pcrOligos.length);
-
-    const oligoBuffer = [];
-
-    for (const oligo of pcrOligos) {
-
-      const newOligo = [];
-
-      for (const nuc of oligo) {
-
-        const rand = Math.random();
-
-        let newNuc = nuc;
-
-        if (rand < 1.8e-4) {
-
-          const errorType = Math.random();
-          if (errorType < 0.973) {
-            newNuc = getSubNucleotidePCR(nuc);
-            subCounter++;
-          } else if (errorType < 0.99) {
-            delCounter++;
-            continue;
-          } else {
-            //TODO: need to do insertion;
-            insCounter++;
-          }
-
-        }
-
-        newOligo.push(newNuc);
-
-      }
-
-      oligoBuffer.push(newOligo);
-
-    }
-
-    pcrOligos.extend(oligoBuffer);
-
-  }
 
   console.log(`Subs: ${subCounter}`);
   console.log(`Ins: ${insCounter}`);
   console.log(`Del: ${delCounter}`);
-
-  console.log(pcrOligos.length);
-
-  return pcrOligos;
+  
+  return; 
 }
 
 const sequencing = (oligos) => {
