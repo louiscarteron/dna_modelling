@@ -4,8 +4,8 @@ import { decaySimulation } from "./storageUtils";
 import { getSubNucleotidePCR } from "./pcrUtils";
 import { StatusEnum } from "./modellingStatus";
 import sampleSize from "lodash/sampleSize";
-
 import levenshtein from "js-levenshtein";
+import Error from "./errors.js";
 
 Array.prototype.extend = function (other) {
   other.forEach(function(v) {
@@ -14,6 +14,9 @@ Array.prototype.extend = function (other) {
 }
 
 onmessage = function(e) {
+
+  const errors = new Error(["synthesis", "storage", "pcr", "sequencing"]);
+
   postMessage({status: StatusEnum.START});
 
   const splitOligos = processInput(e.data);
@@ -22,7 +25,7 @@ onmessage = function(e) {
   const baseOligoLength = encodedOligos[0].length;
 
   postMessage({status: StatusEnum.SYNTHESIS});
-  const synOligos = synthesis(encodedOligos);
+  const synOligos = synthesis(encodedOligos, errors);
 
   postMessage({status: StatusEnum.STORAGE});
   const storedOligos = storage(synOligos, 1400, baseOligoLength);
@@ -41,10 +44,12 @@ onmessage = function(e) {
   postMessage({status: StatusEnum.FINISH});
 
   calculateLevenshteinScore(splitOligos, decodedOligos);
+
+  errors.printReport();
 }
 
 //TODO: consider adding report object. probs gonna do it now.
-const synthesis = (oligos) => {
+const synthesis = (oligos, errors) => {
 
   const errorReport = {};
 
@@ -104,11 +109,9 @@ const synthesis = (oligos) => {
 
   }
 
-  errorReport['total'] = {
-    insertions: totalIns,
-    substitutions: totalSub,
-    deletions: totalDel
-  };
+  errors.incrementError("synthesis", "inserts", totalIns);
+  errors.incrementError("synthesis", "deletes", totalDel);
+  errors.incrementError("synthesis", "substitutions", totalSub);
 
   return synOligos;
 }

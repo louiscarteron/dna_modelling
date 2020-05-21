@@ -52,8 +52,8 @@ def _read_csv(filepath):
   return columns[1]
 '''
 
-def _read_input(filepath):
-  input_seq_iterator = SeqIO.parse(filepath, "fastq")
+def _read_input(filepath, filetype):
+  input_seq_iterator = SeqIO.parse(filepath, filetype)
   trimmed_oligos = [str(record.seq) for record in input_seq_iterator]
 
   return trimmed_oligos
@@ -61,7 +61,7 @@ def _read_input(filepath):
 def match(input_oligos, read_oligos):
   report = []
 
-  short = input_oligos[:1000]
+  short = input_oligos[:100]
 
   for i in short:
 
@@ -151,14 +151,15 @@ def process_report(report):
   print(mean(temp))
 
 def dump_report(report):
-  with open("data/42k2b/reports/report_notrim_42k2b.json", "w+") as fp:
+  with open("data/flowcell/report/report_pc_nm_flowcell_1.json", "w+") as fp:
     json.dump(report, fp, indent = 2)
 
 def main():
   #trim_inputs(90, 150, 10)
   #return
   input_oligos = _read_csv("data/3xr6.csv")
-  read_oligos = _read_input("data/42k2b/42k2b.fastq")
+  #read_oligos = _read_input("data/42k2b/trimmed/42k2b_porechop_nomiddle_q10.fastq", "fastq")
+  read_oligos = _read_input("data/flowcell/data/pc_nm_flowcell_1.fasta", "fasta")
   report = match(input_oligos, read_oligos)
   process_report(report)
   dump_report(report)
