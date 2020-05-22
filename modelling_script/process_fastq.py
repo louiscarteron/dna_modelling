@@ -39,6 +39,16 @@ def _read_csv(filepath):
 
   return columns
 
+def _stripOligos(oligos):
+  priming_5 = "CTACAACGCAGATTACAACCTCAGT"
+  priming_3 = "CCATCCTTGCCAGCGTTACC"
+
+  main_bp_length = 25
+
+  stripped = [o[len(priming_5):][:main_bp_length] for o in oligos]
+
+  return stripped
+
 '''
 def _read_csv(filepath):
   columns = defaultdict(list)
@@ -54,6 +64,7 @@ def _read_csv(filepath):
 
 def _read_input(filepath, filetype):
   input_seq_iterator = SeqIO.parse(filepath, filetype)
+
   trimmed_oligos = [str(record.seq) for record in input_seq_iterator]
 
   return trimmed_oligos
@@ -83,6 +94,43 @@ def match(input_oligos, read_oligos):
         'score': best_score,
         'closest_match': best_read,
         'edits': dict(counts)
+      }
+    })
+
+  return report
+
+def match2(input_oligos, read_oligos):
+  report = []
+
+  short = input_oligos[:100]
+
+  for i in short:
+
+    best_score = 1e4
+    best_read = ""
+    match25bp = []
+
+    for r in read_oligos:
+      score = distance(i, r)
+      if score < best_score:
+        best_score = score
+        best_read = r
+
+      if i in r:
+        match25bp.append(r)
+
+    edits = editops(i, best_read)
+    counts = Counter(x[0] for x in edits)
+    
+    report.append({
+      'input_oligo': i,
+      'match': {
+        'score': best_score,
+        'closest_match': best_read,
+        'edits': dict(counts)
+      },
+      '25bp': {
+        'oligos': match25bp
       }
     })
 
@@ -151,16 +199,17 @@ def process_report(report):
   print(mean(temp))
 
 def dump_report(report):
-  with open("data/flowcell/report/report_pc_nm_flowcell_1.json", "w+") as fp:
+  with open("data/42k2b/reports/report_25bp_pc_nm_42k2b.json", "w+") as fp:
     json.dump(report, fp, indent = 2)
 
 def main():
   #trim_inputs(90, 150, 10)
   #return
   input_oligos = _read_csv("data/3xr6.csv")
-  #read_oligos = _read_input("data/42k2b/trimmed/42k2b_porechop_nomiddle_q10.fastq", "fastq")
-  read_oligos = _read_input("data/flowcell/data/pc_nm_flowcell_1.fasta", "fasta")
-  report = match(input_oligos, read_oligos)
+  temp = _stripOligos(input_oligos)
+  read_oligos = _read_input("data/42k2b/trimmed/42k2b_porechop_nomiddle_q10.fastq", "fastq")
+  #report = match(input_oligos, read_oligos)
+  report = match2(temp, read_oligos)
   process_report(report)
   dump_report(report)
   
