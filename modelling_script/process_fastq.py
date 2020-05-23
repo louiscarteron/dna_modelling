@@ -5,6 +5,8 @@ from csv import reader, DictReader
 from collections import defaultdict, Counter
 from munkres import Munkres, print_matrix
 from itertools import islice
+from fuzzywuzzy import fuzz
+import math
 import json
 
 #filename = '/mnt/c/Users/Louis/Documents/DnaModelling/42k_data/output_reads.fastq'
@@ -136,6 +138,108 @@ def match2(input_oligos, read_oligos):
 
   return report
 
+def match25bp(input_oligos, read_oligos):
+  report = []
+
+  reads = read_oligos.copy()
+
+  short = input_oligos[:420]
+
+  for i in input_oligos:
+
+    #match25bp = [r for r in reads if i in r or isCloseSubstring(r, i, 90)]
+
+    match25bp = [r for r in reads if i in r]
+
+    #closeMatch = [r for r in reads if isCloseSubstring(r, i, 0.90)]
+
+    closeMatch = []
+
+    for m in match25bp:
+      reads.remove(m)
+    
+    report.append({
+      'input_oligo': i,
+      'match': match25bp,
+      'closeMatch': closeMatch
+    })
+
+  return report
+
+def isCloseSubstring(mainstring, substring, tol):
+
+  return fuzz.partial_ratio(mainstring, substring) > tol
+
+  '''
+  window_size = len(substring)
+  search_space = [mainstring[i:i + window_size] for i in range(len(mainstring) - window_size)]
+
+  for s in search_space:
+    if distance(substring, s) < tol:
+      return True
+
+  return False
+  '''
+
+def process_25bp(report):
+  forward = "CTACAACGCAGATTACAACCTCAGT"
+  backwards = "CCATCCTTGCCAGCGTTACC"
+  input_size = 420
+  total_matches = sum([len(r['match']) for r in report])
+  print(f'Total Matches: {total_matches}. Overall percentage: {total_matches * 100 / input_size}%')
+
+  close_matches = sum([len(r['closeMatch']) for r in report])
+  print(f'Close Matches: {close_matches}. Overall percentage: {close_matches * 100 / input_size}%')
+
+
+def process_25bp_report(report):
+
+  new_report = []
+
+  for r in report:
+    matches = r.get('match', [])
+
+    if len(matches) == 0:
+      continue
+
+    in_oligo = r['input_oligo']
+    splits = [align_25bp(in_oligo, m) for m in matches]
+
+    splits_info = []
+
+    for s in splits:
+      for t in s:
+        edits = editops(t, in_oligo)
+        counts = Counter(x[0] for x in edits)
+        splits_info.append({
+          'strand': t,
+          'editops': dict(counts)
+        })
+
+    new_report.append({
+      'input_oligo': in_oligo,
+      'splits': splits_info
+    })
+  
+  return new_report
+
+
+
+def align_25bp(true25bp, match):
+  index = match.find(true25bp)
+  bp_length = len(true25bp)
+  max_len = len(match)
+  search_range = math.ceil(index / bp_length)
+  min_start = index - (math.floor(index / bp_length) * bp_length)
+
+  indexes_to_cut_at = [i for i in range(min_start, max_len, bp_length)]
+
+  lines = [match[i: i+bp_length] for i in indexes_to_cut_at]
+  lines.insert(0, match[0:min_start]) #insert missing start in case it is needed
+
+  return lines
+
+
 class GeneratorLen(object):
   def __init__(self, gen, length):
     self.gen = gen
@@ -198,19 +302,33 @@ def process_report(report):
   temp = [r['match']['score'] for r in report]
   print(mean(temp))
 
-def dump_report(report):
-  with open("data/42k2b/reports/report_25bp_pc_nm_42k2b.json", "w+") as fp:
+def dump_report(report, filepath):
+  with open(filepath, "w+") as fp:
     json.dump(report, fp, indent = 2)
 
+def read_json(filepath):
+  with open(filepath) as fp:
+    data = json.load(fp)
+  
+  return data
+
 def main():
+  report = read_json("data/42k2b/reports/report_25bp_exact_42k2b.json")
+  new_report = process_25bp_report(report)
+  dump_report(new_report, "data/42k2b/reports/test.json")
+
+
+
+
+  return 
   #trim_inputs(90, 150, 10)
   #return
   input_oligos = _read_csv("data/3xr6.csv")
   temp = _stripOligos(input_oligos)
   read_oligos = _read_input("data/42k2b/trimmed/42k2b_porechop_nomiddle_q10.fastq", "fastq")
   #report = match(input_oligos, read_oligos)
-  report = match2(temp, read_oligos)
-  process_report(report)
+  report = match25bp(temp, read_oligos)
+  process_25bp(report)
   dump_report(report)
   
 
