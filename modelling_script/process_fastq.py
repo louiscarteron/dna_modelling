@@ -149,18 +149,18 @@ def match25bp(input_oligos, read_oligos):
 
     #match25bp = [r for r in reads if i in r or isCloseSubstring(r, i, 90)]
 
-    match25bp = [r for r in reads if i in r]
+    matched25bp = [r for r in reads if i in r]
 
     #closeMatch = [r for r in reads if isCloseSubstring(r, i, 0.90)]
 
     closeMatch = []
 
-    for m in match25bp:
+    for m in matched25bp:
       reads.remove(m)
     
     report.append({
       'input_oligo': i,
-      'match': match25bp,
+      'match': matched25bp,
       'closeMatch': closeMatch
     })
 
@@ -205,20 +205,29 @@ def process_25bp_report(report):
     in_oligo = r['input_oligo']
     splits = [align_25bp(in_oligo, m) for m in matches]
 
-    splits_info = []
+    match_info = []
 
-    for s in splits:
-      for t in s:
-        edits = editops(t, in_oligo)
+    for idx, val in enumerate(matches):
+      curr_splits = splits[idx]
+      strand_ops = []
+
+      for s in curr_splits:
+
+        edits = editops(s, in_oligo)
         counts = Counter(x[0] for x in edits)
-        splits_info.append({
-          'strand': t,
+        strand_ops.append({
+          'strand': s,
           'editops': dict(counts)
         })
 
+      match_info.append({
+        "sequence": val,
+        "splits": strand_ops
+      })
+
     new_report.append({
       'input_oligo': in_oligo,
-      'splits': splits_info
+      'matches': match_info
     })
   
   return new_report
@@ -239,63 +248,8 @@ def align_25bp(true25bp, match):
 
   return lines
 
-
-class GeneratorLen(object):
-  def __init__(self, gen, length):
-    self.gen = gen
-    self.length = length
-
-  def __len__(self): 
-    return self.length
-
-  def __iter__(self):
-    return self.gen
-
-  def __getitem__(self, key):
-    if isinstance(key, int) and key >= 0:
-      return islice(self.gen, key, key + 1)
-    elif isinstance(key, slice):
-      return islice(self.gen, key.start, key.stop, key.step)
-    else:
-      raise KeyError(f'Key must be non-negative integer or slice, not {key}')
-
-def match_try(input_oligos, read_oligos):
-  distance_matrix = []
-
-  print(len(read_oligos))
-
-  short_input = input_oligos[:5]
-  short_read = read_oligos[:20000]
-
-  for i in short_input:
-    distance_matrix.append(GeneratorLen((distance(i, r) for r in short_read), 20000))
-
-  print("done")
-
-  m = Munkres()
-  indexes = m.compute(distance_matrix)
-
-  print("done")
-
-  report = []
-
-  for row, column in indexes:
-    io = short_input[row]
-    ro = short_read[column]
-
-    edits = editops(io, ro)
-    counts = Counter(x[0] for x in edits)
-
-    report.append({
-      'input_oligo': io,
-      'match': {
-        'score': distance(io, ro),
-        'closest_match': ro,
-        'edits': dict(counts)
-      }
-    })
-    
-  return report
+def print_table_from_report(report):
+  pass
 
 
 def process_report(report):
