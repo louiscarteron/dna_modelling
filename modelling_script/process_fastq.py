@@ -249,9 +249,135 @@ def align_25bp(true25bp, match):
   return lines
 
 def print_table_from_report(report):
-  pass
+  total_inputs = len(report)
+
+  bp_length = len(report[0].get('input_oligo'))
+
+  sub_count = 0
+  ins_count = 0
+  del_count = 0
+  total_nucleotides = 0
+
+  sub_info = {'A': {'A': 0, 'G': 0, 'C': 0, 'T': 0},
+   'G': {'A': 0, 'G': 0, 'C': 0, 'T': 0}, 
+   'C': {'A': 0, 'G': 0, 'C': 0, 'T': 0}, 
+   'T': {'A': 0, 'G': 0, 'C': 0, 'T': 0}
+  }
+
+  del_info = {'A': 0, 'G': 0, 'C': 0, 'T': 0}
+
+  ins_info = {'A': 0, 'G': 0, 'C': 0, 'T': 0}
+
+  for r in report:
+    matches = r.get('matches', [])
+    input_oligo = r.get('input_oligo', "")
+
+    for m in matches:
+      splits = m.get('splits', [])
 
 
+      seq_count = 0
+
+      for s in splits:
+
+        current_strand = s.get('strand', "")
+
+        if len(current_strand) < bp_length:
+          continue
+        
+        if seq_count >= 3:
+          continue
+
+
+        replacements = process_replacements(input_oligo, current_strand)
+
+        for rep in replacements:
+
+          rep_type = rep.get('type')
+
+          if rep_type == 'insert':
+            key = rep.get('modification').get('insert')
+            ins_info[key] += 1
+
+          elif rep_type == 'replace':
+            og = rep.get('modification').get('original')
+            nw_olg = rep.get('modification').get('replacement')
+            sub_info[og][nw_olg] += 1
+
+          else:
+            key = rep.get('modification').get('delete')
+            del_info[key] += 1
+
+
+        total_nucleotides += len(current_strand)
+        
+        editops = s.get('editops', {})
+
+        sub_count += editops.get('replace', 0)
+        ins_count += editops.get('insert', 0)
+        del_count += editops.get('delete', 0)
+
+        seq_count += 1
+
+  total_errors = sub_count + ins_count + del_count
+        
+  print(f'Total errors: {total_errors} ({total_errors/total_nucleotides:.2f}%)')
+  print('Breakdown as follows:')
+  print(f'Substitutions: {sub_count} ({sub_count * 100 / total_errors:.2f}%)')
+  for (key, val) in sub_info.items():
+  
+    total_for_sub = sum(val.values())
+    print(f'  Original nucleotide {key} : {total_for_sub} ({total_for_sub * 100 / sub_count:.2f}%)')
+    for (key, val) in val.items():
+      print(f'    {key}: {val} ({val * 100/ total_for_sub:.2f}%)')
+
+  print("\n")
+  print(f'Insertions: {ins_count} ({ins_count * 100 / total_errors:.2f}%)')
+  print(f'  A: {ins_info["A"]} ({ins_info["A"] * 100/ ins_count:.2f}%)')
+  print(f'  C: {ins_info["C"]} ({ins_info["C"] * 100/ ins_count:.2f}%)')
+  print(f'  G: {ins_info["G"]} ({ins_info["G"] * 100/ ins_count:.2f}%)')
+  print(f'  T: {ins_info["T"]} ({ins_info["T"] * 100/ ins_count:.2f}%)')
+
+  print("\n")
+  print(f'Deletions: {del_count} ({del_count * 100 / total_errors:.2f}%)')
+  print(f'  A: {del_info["A"]} ({del_info["A"] * 100/ del_count:.2f}%)')
+  print(f'  C: {del_info["C"]} ({del_info["C"] * 100/ del_count:.2f}%)')
+  print(f'  G: {del_info["G"]} ({del_info["G"] * 100/ del_count:.2f}%)')
+  print(f'  T: {del_info["T"]} ({del_info["T"] * 100/ del_count:.2f}%)')
+
+
+
+def process_replacements(str1, str2):
+  edits = editops(str1, str2)
+  temp = []
+
+  for e in edits:
+
+    (op, spos, dpos) = e
+
+    if op == 'replace':
+      info = {'original': str1[spos], 'replacement': str2[dpos]}
+      temp.append({
+        'type': op,
+        'modification': info
+      })
+
+    elif op == 'insert':
+      info = {'insert': str2[dpos]}
+      temp.append({
+        'type': op,
+        'modification': info
+      })
+
+    else:
+      info = {'delete': str1[spos]}
+      temp.append({
+        'type': op,
+        'modification': info
+      })
+
+  return temp
+      
 def process_report(report):
   temp = [r['match']['score'] for r in report]
   print(mean(temp))
@@ -267,14 +393,16 @@ def read_json(filepath):
   return data
 
 def main():
-  report = read_json("data/42k2b/reports/report_25bp_exact_42k2b.json")
+
+  report = read_json("data/42k2b/reports/full.json")
   new_report = process_25bp_report(report)
-  dump_report(new_report, "data/42k2b/reports/test.json")
+  dump_report(new_report, "data/42k2b/reports/full_errors.json")
+
+  print_table_from_report(new_report)
+
+  return
 
 
-
-
-  return 
   #trim_inputs(90, 150, 10)
   #return
   input_oligos = _read_csv("data/3xr6.csv")
@@ -283,7 +411,7 @@ def main():
   #report = match(input_oligos, read_oligos)
   report = match25bp(temp, read_oligos)
   process_25bp(report)
-  dump_report(report)
+  dump_report(report, "data/42k2b/reports/full.json")
   
 
 if __name__ == "__main__":
