@@ -184,7 +184,7 @@ def isCloseSubstring(mainstring, substring, tol):
 def process_25bp(report):
   forward = "CTACAACGCAGATTACAACCTCAGT"
   backwards = "CCATCCTTGCCAGCGTTACC"
-  input_size = 420
+  input_size = 42000
   total_matches = sum([len(r['match']) for r in report])
   print(f'Total Matches: {total_matches}. Overall percentage: {total_matches * 100 / input_size}%')
 
@@ -268,9 +268,20 @@ def print_table_from_report(report):
 
   ins_info = {'A': 0, 'G': 0, 'C': 0, 'T': 0}
 
+  nucleotide_distribution = {'A': 0, 'G': 0, 'C': 0, 'T': 0}
+
+  read_distribution = {'A': 0, 'G': 0, 'C': 0, 'T': 0}
+
+  total_input_25_length = 0
+
   for r in report:
     matches = r.get('matches', [])
     input_oligo = r.get('input_oligo', "")
+
+    total_input_25_length += len(input_oligo)
+    input_dist = Counter(input_oligo)
+    for (key, val) in input_dist.items():
+      nucleotide_distribution[key] += val
 
     for m in matches:
       splits = m.get('splits', [])
@@ -308,7 +319,10 @@ def print_table_from_report(report):
             key = rep.get('modification').get('delete')
             del_info[key] += 1
 
-
+        strand_dist = Counter(current_strand)
+        for (key, val) in strand_dist.items():
+          read_distribution[key] += val
+        
         total_nucleotides += len(current_strand)
         
         editops = s.get('editops', {})
@@ -320,7 +334,21 @@ def print_table_from_report(report):
         seq_count += 1
 
   total_errors = sub_count + ins_count + del_count
-        
+
+  print(f'Nucleotide distribution in inputs')
+  print(f'  A: {nucleotide_distribution["A"]} ({nucleotide_distribution["A"] * 100/ total_input_25_length:.2f}%)')
+  print(f'  C: {nucleotide_distribution["C"]} ({nucleotide_distribution["C"] * 100/ total_input_25_length:.2f}%)')
+  print(f'  G: {nucleotide_distribution["G"]} ({nucleotide_distribution["G"] * 100/ total_input_25_length:.2f}%)')
+  print(f'  T: {nucleotide_distribution["T"]} ({nucleotide_distribution["T"] * 100/ total_input_25_length:.2f}%)')
+
+  print("")
+  print(f'Nucleotide distribution in reads')
+  print(f'  A: {read_distribution["A"]} ({read_distribution["A"] * 100/ total_nucleotides:.2f}%)')
+  print(f'  C: {read_distribution["C"]} ({read_distribution["C"] * 100/ total_nucleotides:.2f}%)')
+  print(f'  G: {read_distribution["G"]} ({read_distribution["G"] * 100/ total_nucleotides:.2f}%)')
+  print(f'  T: {read_distribution["T"]} ({read_distribution["T"] * 100/ total_nucleotides:.2f}%)')
+
+  print("\n")
   print(f'Total errors: {total_errors} ({total_errors/total_nucleotides:.2f}%)')
   print('Breakdown as follows:')
   print(f'Substitutions: {sub_count} ({sub_count * 100 / total_errors:.2f}%)')
@@ -393,25 +421,26 @@ def read_json(filepath):
   return data
 
 def main():
-
-  report = read_json("data/42k2b/reports/full.json")
+  
+  report = read_json("data/flowcell/report/full_flowcell3.json")
   new_report = process_25bp_report(report)
-  dump_report(new_report, "data/42k2b/reports/full_errors.json")
+  #dump_report(new_report, "data/flowcell/report/full_flowcell3_errors.json")
 
   print_table_from_report(new_report)
 
   return
-
+  
 
   #trim_inputs(90, 150, 10)
   #return
   input_oligos = _read_csv("data/3xr6.csv")
   temp = _stripOligos(input_oligos)
-  read_oligos = _read_input("data/42k2b/trimmed/42k2b_porechop_nomiddle_q10.fastq", "fastq")
+  #read_oligos = _read_input("data/42k2b/trimmed/42k2b_porechop_nomiddle_q10.fastq", "fastq")
+  read_oligos = _read_input("data/flowcell/data/pc_nm_flowcell_3.fasta", "fasta")
   #report = match(input_oligos, read_oligos)
   report = match25bp(temp, read_oligos)
   process_25bp(report)
-  dump_report(report, "data/42k2b/reports/full.json")
+  dump_report(report, "data/flowcell/report/full_flowcell3.json")
   
 
 if __name__ == "__main__":
