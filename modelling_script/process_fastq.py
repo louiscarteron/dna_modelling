@@ -248,7 +248,7 @@ def align_25bp(true25bp, match):
 
   return lines
 
-def print_table_from_report(report):
+def print_table_from_report(report, print_results=True):
   total_inputs = len(report)
 
   bp_length = len(report[0].get('input_oligo'))
@@ -335,44 +335,47 @@ def print_table_from_report(report):
 
   total_errors = sub_count + ins_count + del_count
 
-  print(f'Nucleotide distribution in inputs')
-  print(f'  A: {nucleotide_distribution["A"]} ({nucleotide_distribution["A"] * 100/ total_input_25_length:.2f}%)')
-  print(f'  C: {nucleotide_distribution["C"]} ({nucleotide_distribution["C"] * 100/ total_input_25_length:.2f}%)')
-  print(f'  G: {nucleotide_distribution["G"]} ({nucleotide_distribution["G"] * 100/ total_input_25_length:.2f}%)')
-  print(f'  T: {nucleotide_distribution["T"]} ({nucleotide_distribution["T"] * 100/ total_input_25_length:.2f}%)')
+  if print_results:
 
-  print("")
-  print(f'Nucleotide distribution in reads')
-  print(f'  A: {read_distribution["A"]} ({read_distribution["A"] * 100/ total_nucleotides:.2f}%)')
-  print(f'  C: {read_distribution["C"]} ({read_distribution["C"] * 100/ total_nucleotides:.2f}%)')
-  print(f'  G: {read_distribution["G"]} ({read_distribution["G"] * 100/ total_nucleotides:.2f}%)')
-  print(f'  T: {read_distribution["T"]} ({read_distribution["T"] * 100/ total_nucleotides:.2f}%)')
+    print(f'Nucleotide distribution in inputs')
+    print(f'  A: {nucleotide_distribution["A"]} ({nucleotide_distribution["A"] * 100/ total_input_25_length:.2f}%)')
+    print(f'  C: {nucleotide_distribution["C"]} ({nucleotide_distribution["C"] * 100/ total_input_25_length:.2f}%)')
+    print(f'  G: {nucleotide_distribution["G"]} ({nucleotide_distribution["G"] * 100/ total_input_25_length:.2f}%)')
+    print(f'  T: {nucleotide_distribution["T"]} ({nucleotide_distribution["T"] * 100/ total_input_25_length:.2f}%)')
 
-  print("\n")
-  print(f'Total errors: {total_errors} ({total_errors/total_nucleotides:.2f}%)')
-  print('Breakdown as follows:')
-  print(f'Substitutions: {sub_count} ({sub_count * 100 / total_errors:.2f}%)')
-  for (key, val) in sub_info.items():
-  
-    total_for_sub = sum(val.values())
-    print(f'  Original nucleotide {key} : {total_for_sub} ({total_for_sub * 100 / sub_count:.2f}%)')
-    for (key, val) in val.items():
-      print(f'    {key}: {val} ({val * 100/ total_for_sub:.2f}%)')
+    print("")
+    print(f'Nucleotide distribution in reads')
+    print(f'  A: {read_distribution["A"]} ({read_distribution["A"] * 100/ total_nucleotides:.2f}%)')
+    print(f'  C: {read_distribution["C"]} ({read_distribution["C"] * 100/ total_nucleotides:.2f}%)')
+    print(f'  G: {read_distribution["G"]} ({read_distribution["G"] * 100/ total_nucleotides:.2f}%)')
+    print(f'  T: {read_distribution["T"]} ({read_distribution["T"] * 100/ total_nucleotides:.2f}%)')
 
-  print("\n")
-  print(f'Insertions: {ins_count} ({ins_count * 100 / total_errors:.2f}%)')
-  print(f'  A: {ins_info["A"]} ({ins_info["A"] * 100/ ins_count:.2f}%)')
-  print(f'  C: {ins_info["C"]} ({ins_info["C"] * 100/ ins_count:.2f}%)')
-  print(f'  G: {ins_info["G"]} ({ins_info["G"] * 100/ ins_count:.2f}%)')
-  print(f'  T: {ins_info["T"]} ({ins_info["T"] * 100/ ins_count:.2f}%)')
+    print("\n")
+    print(f'Total errors: {total_errors} ({total_errors/total_nucleotides:.2f}%)')
+    print('Breakdown as follows:')
+    print(f'Substitutions: {sub_count} ({sub_count * 100 / total_errors:.2f}%)')
+    for (key, val) in sub_info.items():
+    
+      total_for_sub = sum(val.values())
+      print(f'  Original nucleotide {key} : {total_for_sub} ({total_for_sub * 100 / sub_count:.2f}%)')
+      for (key, val) in val.items():
+        print(f'    {key}: {val} ({val * 100/ total_for_sub:.2f}%)')
 
-  print("\n")
-  print(f'Deletions: {del_count} ({del_count * 100 / total_errors:.2f}%)')
-  print(f'  A: {del_info["A"]} ({del_info["A"] * 100/ del_count:.2f}%)')
-  print(f'  C: {del_info["C"]} ({del_info["C"] * 100/ del_count:.2f}%)')
-  print(f'  G: {del_info["G"]} ({del_info["G"] * 100/ del_count:.2f}%)')
-  print(f'  T: {del_info["T"]} ({del_info["T"] * 100/ del_count:.2f}%)')
+    print("\n")
+    print(f'Insertions: {ins_count} ({ins_count * 100 / total_errors:.2f}%)')
+    print(f'  A: {ins_info["A"]} ({ins_info["A"] * 100/ ins_count:.2f}%)')
+    print(f'  C: {ins_info["C"]} ({ins_info["C"] * 100/ ins_count:.2f}%)')
+    print(f'  G: {ins_info["G"]} ({ins_info["G"] * 100/ ins_count:.2f}%)')
+    print(f'  T: {ins_info["T"]} ({ins_info["T"] * 100/ ins_count:.2f}%)')
 
+    print("\n")
+    print(f'Deletions: {del_count} ({del_count * 100 / total_errors:.2f}%)')
+    print(f'  A: {del_info["A"]} ({del_info["A"] * 100/ del_count:.2f}%)')
+    print(f'  C: {del_info["C"]} ({del_info["C"] * 100/ del_count:.2f}%)')
+    print(f'  G: {del_info["G"]} ({del_info["G"] * 100/ del_count:.2f}%)')
+    print(f'  T: {del_info["T"]} ({del_info["T"] * 100/ del_count:.2f}%)')
+
+  return del_info, ins_info, sub_info
 
 
 def process_replacements(str1, str2):
