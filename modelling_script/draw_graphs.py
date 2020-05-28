@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import numpy as np
 from Levenshtein import distance, editops
 from collections import Counter
 import json
@@ -9,6 +11,42 @@ def read_json(filepath):
     data = json.load(fp)
   
   return data
+
+def stacked():
+  '''
+  a_scores = [deletions[0]['A'] * 100 / total_1, deletions[1]['A'] * 100 / total_2, deletions[2]['A'] * 100 / total_3]
+  c_scores = [deletions[0]['C'] * 100 / total_1, deletions[1]['C'] * 100 / total_2, deletions[2]['C'] * 100 / total_3]
+  g_scores = [deletions[0]['G'] * 100 / total_1, deletions[1]['G'] * 100 / total_2, deletions[2]['G'] * 100 / total_3]
+  t_scores = [deletions[0]['T'] * 100 / total_1, deletions[1]['T'] * 100 / total_2, deletions[2]['T'] * 100 / total_3]
+
+  width = 0.35
+
+  ind = [0, 1, 2]
+
+  temp1 = np.add(a_scores, c_scores).tolist()
+  temp2 = np.add(temp1, g_scores).tolist()
+
+  
+  p1 = plt.bar(ind, a_scores, width)
+  p2 = plt.bar(ind, c_scores, width, bottom=a_scores)
+  p3 = plt.bar(ind, g_scores, width, bottom=temp1)
+  p4 = plt.bar(ind, t_scores, width, bottom=temp2)
+
+  labels=['Flowcell 1', 'Flowcell 2', 'Flowcell 3']
+  x = [0, 1, 2]
+
+  plt.xticks(x, labels)
+  plt.ylabel('Probability (%)')
+  plt.title('Nucleotide Deletion for Flowcell 1, 2, 3')
+
+  
+  plt.legend((p1[0], p2[0], p3[0], p4[0]), ('A', 'C', 'G', 'T'), bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+
+  plt.savefig("test2.png", bbox_inches="tight")
+
+  return
+  '''
+  pass
 
 
 def process_reports(reports):
@@ -22,32 +60,18 @@ def process_reports(reports):
     insertions.append(inss)
     substitutions.append(subs)
 
-  '''
-    'A': [deletions[i]['A'] for i in range(3)],
-    'C': [deletions[i]['C'] for i in range(3)],
-    'G': [deletions[i]['G'] for i in range(3)],
-    'T': [deletions[i]['T'] for i in range(3)],
-  '''
 
-  total_1 = sum(deletions[0].values())
-  total_2 = sum(deletions[1].values())
-  total_3 = sum(deletions[2].values())
+  total_1 = sum(insertions[0].values())
+  total_2 = sum(insertions[1].values())
+  total_3 = sum(insertions[2].values())
 
   mod_data = {
-    'Flowcell1': [i * 100 / total_1 for i in deletions[0].values()],
-    'Flowcell2': [i * 100 / total_2 for i in deletions[1].values()],
-    'Flowcell3': [i * 100 / total_3 for i in deletions[2].values()]
+    'Flowcell1': [i * 100 / total_1 for i in insertions[0].values()],
+    'Flowcell2': [i * 100 / total_2 for i in insertions[1].values()],
+    'Flowcell3': [i * 100 / total_3 for i in insertions[2].values()]
   }
 
-  mod_data2 = {
-    'A': [deletions[i]['A'] for i in range(3)],
-    'C': [deletions[i]['C'] for i in range(3)],
-    'G': [deletions[i]['G'] for i in range(3)],
-    'T': [deletions[i]['T'] for i in range(3)],
-  }
-
-  
-  tags = deletions[0].keys()
+  tags = insertions[0].keys()
   fig, ax = plt.subplots()
   bar_plot(ax, mod_data, total_width=.8, single_width=.9)
   #w = 0.3
@@ -59,11 +83,17 @@ def process_reports(reports):
   labels=['A', 'C', 'G', 'T']
   x = [0, 1, 2, 3]
 
+  tick_spacing = 1
+
+  ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+  for label in ax.get_yticklabels()[1::2]:
+    label.set_visible(False)
+
   plt.xticks(x, labels)
   plt.ylabel('Probability (%)')
-  plt.title('Nucleotide Deletion for Flowcell 1, 2, 3')
+  plt.title('Nucleotide Insertion for Flowcell 1, 2, 3')
 
-  plt.savefig("test.png", bbox_inches="tight")
+  plt.savefig("graphs/insertions.png", bbox_inches="tight")
 
 def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
   """Draws a bar plot with multiple bars per data point.
