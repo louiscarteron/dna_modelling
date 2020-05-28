@@ -22,7 +22,24 @@ def process_reports(reports):
     insertions.append(inss)
     substitutions.append(subs)
 
+  '''
+    'A': [deletions[i]['A'] for i in range(3)],
+    'C': [deletions[i]['C'] for i in range(3)],
+    'G': [deletions[i]['G'] for i in range(3)],
+    'T': [deletions[i]['T'] for i in range(3)],
+  '''
+
+  total_1 = sum(deletions[0].values())
+  total_2 = sum(deletions[1].values())
+  total_3 = sum(deletions[2].values())
+
   mod_data = {
+    'Flowcell1': [i * 100 / total_1 for i in deletions[0].values()],
+    'Flowcell2': [i * 100 / total_2 for i in deletions[1].values()],
+    'Flowcell3': [i * 100 / total_3 for i in deletions[2].values()]
+  }
+
+  mod_data2 = {
     'A': [deletions[i]['A'] for i in range(3)],
     'C': [deletions[i]['C'] for i in range(3)],
     'G': [deletions[i]['G'] for i in range(3)],
@@ -39,7 +56,14 @@ def process_reports(reports):
   #ax.bar(tags, deletions[2].values(), width=w, color='r', align='center')
   #ax.autoscale(tight=True)
 
-  plt.savefig("test.png")
+  labels=['A', 'C', 'G', 'T']
+  x = [0, 1, 2, 3]
+
+  plt.xticks(x, labels)
+  plt.ylabel('Probability (%)')
+  plt.title('Nucleotide Deletion for Flowcell 1, 2, 3')
+
+  plt.savefig("test.png", bbox_inches="tight")
 
 def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
   """Draws a bar plot with multiple bars per data point.
@@ -104,7 +128,7 @@ def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True
 
   # Draw legend if we need
   if legend:
-    ax.legend(bars, data.keys())
+    ax.legend(bars, data.keys(), bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
 def main():
   reports = [read_json(f'data/flowcell/report/full_flowcell{i}.json') for i in range(1, 4)]
