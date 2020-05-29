@@ -48,6 +48,117 @@ def stacked():
   '''
   pass
 
+def graph_insertions(insertions):
+  
+  total_1 = sum(insertions[0].values())
+  total_2 = sum(insertions[1].values())
+  total_3 = sum(insertions[2].values())
+
+  mod_data = {
+    'Flowcell1': [i / total_1 for i in insertions[0].values()],
+    'Flowcell2': [i / total_2 for i in insertions[1].values()],
+    'Flowcell3': [i / total_3 for i in insertions[2].values()]
+  }
+  
+
+  tags = insertions[0].keys()
+  plt.style.use('seaborn-colorblind')
+  fig, ax = plt.subplots()
+  bar_plot(ax, mod_data, total_width=.8, single_width=.9)
+
+  labels=['A', 'C', 'G', 'T']
+  x = [0, 1, 2, 3]
+
+  lines_x = [0.5, 1.5, 2.5]
+  for xc in lines_x:
+    ax.axvline(x=xc, color="0.8")
+
+  tick_spacing_y = 0.01
+
+  ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_y))
+  for label in ax.get_yticklabels()[1::2]:
+    label.set_visible(False)
+
+  plt.xticks(x, labels)
+  plt.ylabel('Conditional err prob')
+  plt.title('Nucleotide Insertion for Flowcell 1, 2, 3')
+
+  plt.savefig("graphs/insertions.png", bbox_inches="tight")
+
+def graph_deletions(deletions):
+  
+  total_1 = sum(deletions[0].values())
+  total_2 = sum(deletions[1].values())
+  total_3 = sum(deletions[2].values())
+
+  mod_data = {
+    'Flowcell1': [i / total_1 for i in deletions[0].values()],
+    'Flowcell2': [i / total_2 for i in deletions[1].values()],
+    'Flowcell3': [i / total_3 for i in deletions[2].values()]
+  }
+  
+
+  tags = deletions[0].keys()
+  plt.style.use('seaborn-colorblind')
+  fig, ax = plt.subplots()
+  bar_plot(ax, mod_data, total_width=.8, single_width=.9)
+
+  labels=['A', 'C', 'G', 'T']
+  x = [0, 1, 2, 3]
+
+  lines_x = [0.5, 1.5, 2.5]
+  for xc in lines_x:
+    ax.axvline(x=xc, color="0.8")
+
+  tick_spacing_y = 0.01
+
+  ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_y))
+  for label in ax.get_yticklabels()[1::2]:
+    label.set_visible(False)
+
+  plt.xticks(x, labels)
+  plt.ylabel('Conditional err prob')
+  plt.title('Nucleotide Deletion for Flowcell 1, 2, 3')
+
+  plt.savefig("graphs/deletions.png", bbox_inches="tight")
+
+def graph_substitutions(substitutions):
+
+  total_1 = np.sum([list(a.values()) for a in substitutions[0].values()])
+  total_2 = np.sum([list(a.values()) for a in substitutions[1].values()])
+  total_3 = np.sum([list(a.values()) for a in substitutions[2].values()])
+
+  labels = ['A2G', 'A2C', 'A2T', 'G2A', 'G2C', 'G2T', 'C2A', 'C2G', 'C2T', 'T2A', 'T2G', 'T2C']
+  
+  mod_data = {
+    'Flowcell1': [i / total_1 for a in substitutions[0].values() for i in a.values() if i != 0],
+    'Flowcell2': [i / total_2 for a in substitutions[1].values() for i in a.values() if i != 0],
+    'Flowcell3': [i / total_3 for a in substitutions[2].values() for i in a.values() if i != 0]
+  }
+
+  tags = substitutions[0].keys()
+  plt.style.use('seaborn-colorblind')
+  fig, ax = plt.subplots(figsize=(20, 10))
+  bar_plot(ax, mod_data, total_width=.8, single_width=.9)
+
+  x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+  lines_x = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
+  for xc in lines_x:
+    ax.axvline(x=xc, color="0.8")
+
+  tick_spacing_y = 0.01
+
+  ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_y))
+  for label in ax.get_yticklabels()[1::2]:
+    label.set_visible(False)
+
+  plt.xticks(x, labels)
+  plt.ylabel('conditionial err prob')
+  plt.title('Nucleotide Substitution for Flowcell 1, 2, 3')
+
+  plt.savefig("graphs/substitutions.png", bbox_inches="tight")
+
 
 def process_reports(reports):
   deletions = []
@@ -60,7 +171,13 @@ def process_reports(reports):
     insertions.append(inss)
     substitutions.append(subs)
 
+  graph_deletions(deletions)
+  graph_insertions(insertions)
+  graph_substitutions(substitutions)
 
+  return
+
+  '''
   total_1 = sum(insertions[0].values())
   total_2 = sum(insertions[1].values())
   total_3 = sum(insertions[2].values())
@@ -70,9 +187,25 @@ def process_reports(reports):
     'Flowcell2': [i * 100 / total_2 for i in insertions[1].values()],
     'Flowcell3': [i * 100 / total_3 for i in insertions[2].values()]
   }
+  '''
 
-  tags = insertions[0].keys()
-  fig, ax = plt.subplots()
+  total_1 = np.sum([list(a.values()) for a in substitutions[0].values()])
+  total_2 = np.sum([list(a.values()) for a in substitutions[1].values()])
+  total_3 = np.sum([list(a.values()) for a in substitutions[2].values()])
+
+  labels = ['A2G', 'A2C', 'A2T', 'G2A', 'G2C', 'G2T', 'C2A', 'C2G', 'C2T', 'T2A', 'T2G', 'T2C']
+  
+  mod_data = {
+    'Flowcell1': [i / total_1 for a in substitutions[0].values() for i in a.values() if i != 0],
+    'Flowcell2': [i / total_2 for a in substitutions[1].values() for i in a.values() if i != 0],
+    'Flowcell3': [i / total_3 for a in substitutions[2].values() for i in a.values() if i != 0]
+  }
+
+  colors = []
+
+  tags = substitutions[0].keys()
+  plt.style.use('seaborn-colorblind')
+  fig, ax = plt.subplots(figsize=(20, 10))
   bar_plot(ax, mod_data, total_width=.8, single_width=.9)
   #w = 0.3
   #ax.bar(tags, deletions[0].values(), width=w, color='b', align='center')
@@ -80,20 +213,27 @@ def process_reports(reports):
   #ax.bar(tags, deletions[2].values(), width=w, color='r', align='center')
   #ax.autoscale(tight=True)
 
-  labels=['A', 'C', 'G', 'T']
-  x = [0, 1, 2, 3]
+  #labels=['A', 'C', 'G', 'T']
+  x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
-  tick_spacing = 1
+  lines_x = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
+  for xc in lines_x:
+    ax.axvline(x=xc, color="0.8")
 
-  ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+  tick_spacing_y = 0.01
+  tick_spacing_x = 4
+
+  ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_x))
+
+  ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_y))
   for label in ax.get_yticklabels()[1::2]:
     label.set_visible(False)
 
   plt.xticks(x, labels)
-  plt.ylabel('Probability (%)')
-  plt.title('Nucleotide Insertion for Flowcell 1, 2, 3')
+  plt.ylabel('conditionial err prob')
+  plt.title('Nucleotide Substitution for Flowcell 1, 2, 3')
 
-  plt.savefig("graphs/insertions.png", bbox_inches="tight")
+  plt.savefig("graphs/substitutions.png", bbox_inches="tight")
 
 def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
   """Draws a bar plot with multiple bars per data point.
