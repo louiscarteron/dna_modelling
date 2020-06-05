@@ -71,6 +71,22 @@ def _read_input(filepath, filetype):
 
   return trimmed_oligos
 
+def _round_up(i):
+  return int(round(i + 5.1, -1))
+
+def _get_length_distribution(filepath, filetype):
+  input_seq_iterator = SeqIO.parse(filename, filetype)
+  length_iterator = (_round_up(len(str(record.seq))) for record in input_seq_iterator)
+  return Counter(length_iterator)
+
+def _get_score_distribution(filepath, filetype):
+  input_seq_iterator = SeqIO.parse(filename, filetype)
+  score_iterator = (round(mean(record.letter_annotations['phred_quality'])) for record in input_seq_iterator)
+  return Counter(score_iterator)
+  
+
+
+
 def match(input_oligos, read_oligos):
   report = []
 
@@ -278,10 +294,10 @@ def print_table_from_report(report, print_results=True):
     matches = r.get('matches', [])
     input_oligo = r.get('input_oligo', "")
 
-    total_input_25_length += len(input_oligo)
-    input_dist = Counter(input_oligo)
-    for (key, val) in input_dist.items():
-      nucleotide_distribution[key] += val
+    #total_input_25_length += len(input_oligo)
+    #input_dist = Counter(input_oligo)
+    #for (key, val) in input_dist.items():
+    #  nucleotide_distribution[key] += val
 
     for m in matches:
       splits = m.get('splits', [])
@@ -298,6 +314,11 @@ def print_table_from_report(report, print_results=True):
         
         if seq_count >= 3:
           continue
+
+        total_input_25_length += len(input_oligo)
+        input_dist = Counter(input_oligo)
+        for (key, val) in input_dist.items():
+          nucleotide_distribution[key] += val
 
 
         replacements = process_replacements(input_oligo, current_strand)
@@ -338,10 +359,10 @@ def print_table_from_report(report, print_results=True):
   if print_results:
 
     print(f'Nucleotide distribution in inputs')
-    print(f'  A: {nucleotide_distribution["A"]} ({nucleotide_distribution["A"] * 100/ total_input_25_length:.2f}%)')
-    print(f'  C: {nucleotide_distribution["C"]} ({nucleotide_distribution["C"] * 100/ total_input_25_length:.2f}%)')
-    print(f'  G: {nucleotide_distribution["G"]} ({nucleotide_distribution["G"] * 100/ total_input_25_length:.2f}%)')
-    print(f'  T: {nucleotide_distribution["T"]} ({nucleotide_distribution["T"] * 100/ total_input_25_length:.2f}%)')
+    print(f'  A: {nucleotide_distribution["A"]} ({nucleotide_distribution["A"] * 100 / total_input_25_length:.2f}%)')
+    print(f'  C: {nucleotide_distribution["C"]} ({nucleotide_distribution["C"] * 100 / total_input_25_length:.2f}%)')
+    print(f'  G: {nucleotide_distribution["G"]} ({nucleotide_distribution["G"] * 100 / total_input_25_length:.2f}%)')
+    print(f'  T: {nucleotide_distribution["T"]} ({nucleotide_distribution["T"] * 100 / total_input_25_length:.2f}%)')
 
     print("")
     print(f'Nucleotide distribution in reads')
@@ -351,7 +372,7 @@ def print_table_from_report(report, print_results=True):
     print(f'  T: {read_distribution["T"]} ({read_distribution["T"] * 100/ total_nucleotides:.2f}%)')
 
     print("\n")
-    print(f'Total errors: {total_errors} ({total_errors/total_nucleotides:.2f}%)')
+    print(f'Total errors: {total_errors} ({total_errors * 100/total_nucleotides:.2f}%)')
     print('Breakdown as follows:')
     print(f'Substitutions: {sub_count} ({sub_count * 100 / total_errors:.2f}%)')
     for (key, val) in sub_info.items():
@@ -425,7 +446,7 @@ def read_json(filepath):
 
 def main():
   
-  report = read_json("data/flowcell/report/full_flowcell3.json")
+  report = read_json("data/flowcell/report/full_flowcell1.json")
   new_report = process_25bp_report(report)
   #dump_report(new_report, "data/flowcell/report/full_flowcell3_errors.json")
 

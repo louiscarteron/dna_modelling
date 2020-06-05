@@ -4,7 +4,7 @@ import numpy as np
 from Levenshtein import distance, editops
 from collections import Counter
 import json
-from process_fastq import print_table_from_report, process_25bp_report
+from process_fastq import print_table_from_report, process_25bp_report, _get_length_distribution, _get_score_distribution
 
 def read_json(filepath):
   with open(filepath) as fp:
@@ -300,7 +300,70 @@ def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True
   if legend:
     ax.legend(bars, data.keys(), bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
+
+def graph_lengths():
+  
+  counter = _get_length_distribution("data/flowcell/data/pc_nm_flowcell_1.fasta", "fastq")
+  dict_counter = dict(counter)
+
+  plt.style.use('seaborn-colorblind')
+
+  SMALL_SIZE = 20
+  MEDIUM_SIZE = 24
+  BIGGER_SIZE = 28
+
+  plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+  plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+  plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+  plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+  plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+  plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+  plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+
+  fig, ax = plt.subplots(figsize=(20, 10))
+
+  sorted_dict = dict(sorted(dict_counter.items()))
+
+  x_sum = np.sum(list(sorted_dict.values()))
+
+  x = np.cumsum(list(sorted_dict.values()) / (x_sum * 0.01))[:50]
+
+  x_labels = list(sorted_dict.keys())[:50]
+
+  x_pos = [i for i in range(50)]
+
+ 
+
+  ax.bar(x_pos, x)
+  #plt.axis([0, 20, 0, 10000])
+
+  tick_spacing_x = 20
+  tick_spacing_y = 1
+
+  ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_x))
+
+  ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_y))
+  [l.set_visible(False) for (i,l) in enumerate(ax.yaxis.get_ticklabels()) if (i - 1) % 10 != 0]
+  
+
+  plt.xlabel("Length")
+  plt.ylabel("Proportion < length (%)")
+  plt.title("Cumulative lengths of Flowcell 1")
+
+  #plt.xticks(x_pos, x)
+  plt.xticks(x_pos, x_labels)
+  for label in ax.get_xticklabels()[1::2]:
+    label.set_visible(False)
+
+  plt.savefig("graphs/lengths1.png", bbox_inches="tight")
+
+def graph_scores():
+  pass
+
 def main():
+  graph_lengths()
+  return
   reports = [read_json(f'data/flowcell/report/full_flowcell{i}.json') for i in range(1, 4)]
   process_reports(reports)
 

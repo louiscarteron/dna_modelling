@@ -9,3 +9,5 @@
 *.fastq
 
 *.json
+
+**/graphs

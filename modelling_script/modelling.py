@@ -259,9 +259,29 @@ def monteCarloDecaySimulation(oligos, decayEvents):
     else:
       print("Should have broken an already broken strand")
 
+# Temp must be in kelvins
+def storage2(oligos, time, temp):
+
+  length = 120
+  
+  r = math.exp(41.2 - 15267.6 * (1/temp))
+  dt = 1
+
+  t = 0
+  decay = 0
+  while t < time:
+    for _ in range(length):
+      if random() < r:
+        decay +=  1
+
+    t += dt
+  
+  print(decay)
+
 
 # Time is in years to keep units consistent. 
 # Breaks a strand in 2, meaning it can't be applified in the PCR stage. 
+#https://gyazo.com/53e1f6eaa1d4e2166f1ae85279cdb7fd
 def storage(oligos, time, redundancy):
   half_life = 521
 
@@ -269,6 +289,8 @@ def storage(oligos, time, redundancy):
 
   # Probability of one nucleotide decaying in a time frame (1 year)
   r = math.log(2) / 521 
+
+  k = math.exp(41.2 - 15267.6 * (1/290))
 
   final_oligos = oligos.copy()
 
@@ -333,6 +355,10 @@ def test():
   print(freq)
 
 def main():
+
+  storage2([], 521, 318)
+
+  return
 
   # Used to generate 100 random oligos 
   #oligos = generateRandomOligos(base_oligo_length, 1000)
