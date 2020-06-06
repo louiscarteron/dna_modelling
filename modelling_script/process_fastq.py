@@ -219,15 +219,20 @@ def process_25bp_report(report):
       continue
 
     in_oligo = r['input_oligo']
-    splits = [align_25bp(in_oligo, m) for m in matches]
+    splits_with_idx = [align_25bp(in_oligo, m) for m in matches]
+
+    splits, split_idxes = [list(t) for t in zip(*splits_with_idx)]
 
     match_info = []
 
     for idx, val in enumerate(matches):
       curr_splits = splits[idx]
+      match_index = split_idxes[idx]
       strand_ops = []
 
-      for s in curr_splits:
+      seq_block = [100 for i in range(len(curr_splits))]
+
+      for i, s in enumerate(curr_splits):
 
         edits = editops(s, in_oligo)
         counts = Counter(x[0] for x in edits)
@@ -236,8 +241,15 @@ def process_25bp_report(report):
           'editops': dict(counts)
         })
 
+        if len(s) == 25:
+          seq_block[i] = sum(list(dict(counts).values()))
+
+
+      start_block = find_smallest_sum(seq_block)
+
       match_info.append({
         "sequence": val,
+        "seq_block_start": start_block,
         "splits": strand_ops
       })
 
@@ -248,7 +260,16 @@ def process_25bp_report(report):
   
   return new_report
 
-
+def find_smallest_sum(arr):
+  size = 3
+  idx = 0
+  min_sum = 1000
+  for i in range(len(arr)-size + 1):
+    curr_sum = sum(arr[i:i+size])
+    if curr_sum < min_sum:
+      min_sum = curr_sum
+      idx = i
+  return idx
 
 def align_25bp(true25bp, match):
   index = match.find(true25bp)
@@ -262,7 +283,7 @@ def align_25bp(true25bp, match):
   lines = [match[i: i+bp_length] for i in indexes_to_cut_at]
   lines.insert(0, match[0:min_start]) #insert missing start in case it is needed
 
-  return lines
+  return lines, lines.index(true25bp)
 
 def print_table_from_report(report, print_results=True):
   total_inputs = len(report)
@@ -290,33 +311,55 @@ def print_table_from_report(report, print_results=True):
 
   total_input_25_length = 0
 
+  # Ugly for now
+  temp = {
+    0: {
+    'ins': 0,
+    'sub': 0,
+    'del': 0
+    },
+    1: {
+    'ins': 0,
+    'sub': 0,
+    'del': 0
+    },
+    2: {
+    'ins': 0,
+    'sub': 0,
+    'del': 0
+    },
+  }
+
   for r in report:
     matches = r.get('matches', [])
     input_oligo = r.get('input_oligo', "")
 
-    #total_input_25_length += len(input_oligo)
-    #input_dist = Counter(input_oligo)
-    #for (key, val) in input_dist.items():
-    #  nucleotide_distribution[key] += val
-
     for m in matches:
       splits = m.get('splits', [])
-
+      
+      seq_block_start = m.get('seq_block_start', 1) # Default to 1 in case
 
       seq_count = 0
 
-      for s in splits:
+      for i, s in enumerate(splits):
 
         current_strand = s.get('strand', "")
 
+        '''
         if len(current_strand) < bp_length:
           continue
         
         if seq_count >= 3:
           continue
+        '''
+
+        if i < seq_block_start or i - 2 > seq_block_start:
+          continue
 
         total_input_25_length += len(input_oligo)
         input_dist = Counter(input_oligo)
+        
+        # Populate input distributions
         for (key, val) in input_dist.items():
           nucleotide_distribution[key] += val
 
@@ -351,8 +394,14 @@ def print_table_from_report(report, print_results=True):
         sub_count += editops.get('replace', 0)
         ins_count += editops.get('insert', 0)
         del_count += editops.get('delete', 0)
+  
+        temp[seq_count]['ins'] += editops.get('insert', 0)
+        temp[seq_count]['del'] += editops.get('delete', 0)
+        temp[seq_count]['sub'] += editops.get('replace', 0)
 
         seq_count += 1
+
+        
 
   total_errors = sub_count + ins_count + del_count
 
@@ -395,6 +444,12 @@ def print_table_from_report(report, print_results=True):
     print(f'  C: {del_info["C"]} ({del_info["C"] * 100/ del_count:.2f}%)')
     print(f'  G: {del_info["G"]} ({del_info["G"] * 100/ del_count:.2f}%)')
     print(f'  T: {del_info["T"]} ({del_info["T"] * 100/ del_count:.2f}%)')
+
+    print("\n")
+    for (key, v) in temp.items():
+      print(f'Errors in strand {key}')
+      for (k, val) in v.items():
+        print(f'{k}: {val}')
 
   return del_info, ins_info, sub_info
 
@@ -448,7 +503,7 @@ def main():
   
   report = read_json("data/flowcell/report/full_flowcell1.json")
   new_report = process_25bp_report(report)
-  #dump_report(new_report, "data/flowcell/report/full_flowcell3_errors.json")
+  dump_report(new_report, "data/flowcell/report/full_flowcell1_errors2.json")
 
   print_table_from_report(new_report)
 
