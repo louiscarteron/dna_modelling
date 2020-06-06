@@ -345,16 +345,9 @@ def print_table_from_report(report, print_results=True):
 
         current_strand = s.get('strand', "")
 
-        '''
-        if len(current_strand) < bp_length:
-          continue
-        
-        if seq_count >= 3:
-          continue
-        '''
-
         if i < seq_block_start or i - 2 > seq_block_start:
           continue
+
 
         total_input_25_length += len(input_oligo)
         input_dist = Counter(input_oligo)
@@ -503,7 +496,7 @@ def main():
   
   report = read_json("data/flowcell/report/full_flowcell1.json")
   new_report = process_25bp_report(report)
-  dump_report(new_report, "data/flowcell/report/full_flowcell1_errors2.json")
+  #dump_report(new_report, "data/flowcell/report/full_flowcell1_errors.json")
 
   print_table_from_report(new_report)
 
