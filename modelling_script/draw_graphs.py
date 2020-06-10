@@ -48,6 +48,44 @@ def stacked():
   '''
   pass
 
+def graph_distribution(distribution, title, file_name):
+  
+  total_1 = sum(distribution[0].values())
+  total_2 = sum(distribution[1].values())
+  total_3 = sum(distribution[2].values())
+
+  mod_data = {
+    'Flowcell1': [i / total_1 for i in distribution[0].values()],
+    'Flowcell2': [i / total_2 for i in distribution[1].values()],
+    'Flowcell3': [i / total_3 for i in distribution[2].values()]
+  }
+  
+
+  tags = distribution[0].keys()
+  plt.style.use('seaborn-colorblind')
+
+  fig, ax = plt.subplots()
+  bar_plot(ax, mod_data, total_width=.8, single_width=.9)
+
+  labels=['A', 'G', 'C', 'T']
+  x = [0, 1, 2, 3]
+
+  lines_x = [0.5, 1.5, 2.5]
+  for xc in lines_x:
+    ax.axvline(x=xc, color="0.8")
+
+  tick_spacing_y = 0.01
+
+  ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_y))
+  for label in ax.get_yticklabels()[1::2]:
+    label.set_visible(False)
+
+  plt.xticks(x, labels)
+  plt.ylabel('Nucelotide Proportion')
+  plt.title(title)
+
+  plt.savefig(f'graphs/{file_name}.png', bbox_inches="tight")
+
 def graph_insertions(insertions):
   
   total_1 = sum(insertions[0].values())
@@ -63,10 +101,11 @@ def graph_insertions(insertions):
 
   tags = insertions[0].keys()
   plt.style.use('seaborn-colorblind')
+
   fig, ax = plt.subplots()
   bar_plot(ax, mod_data, total_width=.8, single_width=.9)
 
-  labels=['A', 'C', 'G', 'T']
+  labels=['A', 'G', 'C', 'T']
   x = [0, 1, 2, 3]
 
   lines_x = [0.5, 1.5, 2.5]
@@ -83,7 +122,7 @@ def graph_insertions(insertions):
   plt.ylabel('Conditional err prob')
   plt.title('Nucleotide Insertion for Flowcell 1, 2, 3')
 
-  plt.savefig("graphs/insertions.png", bbox_inches="tight")
+  plt.savefig("graphs/insertions4.png", bbox_inches="tight")
 
 def graph_deletions(deletions):
   
@@ -100,10 +139,11 @@ def graph_deletions(deletions):
 
   tags = deletions[0].keys()
   plt.style.use('seaborn-colorblind')
+
   fig, ax = plt.subplots()
   bar_plot(ax, mod_data, total_width=.8, single_width=.9)
 
-  labels=['A', 'C', 'G', 'T']
+  labels=['A', 'G', 'C', 'T']
   x = [0, 1, 2, 3]
 
   lines_x = [0.5, 1.5, 2.5]
@@ -120,7 +160,7 @@ def graph_deletions(deletions):
   plt.ylabel('Conditional err prob')
   plt.title('Nucleotide Deletion for Flowcell 1, 2, 3')
 
-  plt.savefig("graphs/deletions.png", bbox_inches="tight")
+  plt.savefig("graphs/deletions4.png", bbox_inches="tight")
 
 def graph_substitutions(substitutions):
 
@@ -138,6 +178,19 @@ def graph_substitutions(substitutions):
 
   tags = substitutions[0].keys()
   plt.style.use('seaborn-colorblind')
+
+  SMALL_SIZE = 20
+  MEDIUM_SIZE = 24
+  BIGGER_SIZE = 28
+
+  plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+  plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+  plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+  plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+  plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+  plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+  plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
   fig, ax = plt.subplots(figsize=(20, 10))
   bar_plot(ax, mod_data, total_width=.8, single_width=.9)
 
@@ -157,23 +210,30 @@ def graph_substitutions(substitutions):
   plt.ylabel('conditionial err prob')
   plt.title('Nucleotide Substitution for Flowcell 1, 2, 3')
 
-  plt.savefig("graphs/substitutions.png", bbox_inches="tight")
+  plt.savefig("graphs/substitutions4.png", bbox_inches="tight")
 
 
 def process_reports(reports):
   deletions = []
   insertions = []
   substitutions = []
+  in_distribution = []
+  read_distribution = []
   for report in reports:
     temp = process_25bp_report(report)
-    dels, inss, subs, = print_table_from_report(temp, False)
+    dels, inss, subs, in_dist, read_dist = print_table_from_report(temp, False)
     deletions.append(dels)
     insertions.append(inss)
     substitutions.append(subs)
+    in_distribution.append(in_dist)
+    read_distribution.append(read_dist)
 
   graph_deletions(deletions)
   graph_insertions(insertions)
   graph_substitutions(substitutions)
+
+  #graph_distribution(in_distribution, "Nucleotide Distribution for Matched Inputs", "indist")
+  #graph_distribution(read_distribution, "Nucleotide Distribution for Matched Reads", "redist")
 
   return
 
@@ -362,8 +422,8 @@ def graph_scores():
   pass
 
 def main():
-  graph_lengths()
-  return
+  #graph_lengths()
+  #return
   reports = [read_json(f'data/flowcell/report/full_flowcell{i}.json') for i in range(1, 4)]
   process_reports(reports)
 

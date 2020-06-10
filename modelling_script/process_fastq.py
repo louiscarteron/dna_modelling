@@ -51,19 +51,6 @@ def _stripOligos(oligos):
 
   return stripped
 
-'''
-def _read_csv(filepath):
-  columns = defaultdict(list)
-  # Read csv and skip first column
-  with open(filepath, "r") as f:
-    reader = DictReader(f)
-    for row in reader:
-      for (i, v) in enumerate(row):
-        columns[i].append(v)
-
-  return columns[1]
-'''
-
 def _read_input(filepath, filetype):
   input_seq_iterator = SeqIO.parse(filepath, filetype)
 
@@ -159,8 +146,6 @@ def match25bp(input_oligos, read_oligos):
 
   reads = read_oligos.copy()
 
-  short = input_oligos[:420]
-
   for i in input_oligos:
 
     #match25bp = [r for r in reads if i in r or isCloseSubstring(r, i, 90)]
@@ -186,17 +171,6 @@ def isCloseSubstring(mainstring, substring, tol):
 
   return fuzz.partial_ratio(mainstring, substring) > tol
 
-  '''
-  window_size = len(substring)
-  search_space = [mainstring[i:i + window_size] for i in range(len(mainstring) - window_size)]
-
-  for s in search_space:
-    if distance(substring, s) < tol:
-      return True
-
-  return False
-  '''
-
 def process_25bp(report):
   forward = "CTACAACGCAGATTACAACCTCAGT"
   backwards = "CCATCCTTGCCAGCGTTACC"
@@ -204,8 +178,8 @@ def process_25bp(report):
   total_matches = sum([len(r['match']) for r in report])
   print(f'Total Matches: {total_matches}. Overall percentage: {total_matches * 100 / input_size}%')
 
-  close_matches = sum([len(r['closeMatch']) for r in report])
-  print(f'Close Matches: {close_matches}. Overall percentage: {close_matches * 100 / input_size}%')
+  #close_matches = sum([len(r['closeMatch']) for r in report])
+  #print(f'Close Matches: {close_matches}. Overall percentage: {close_matches * 100 / input_size}%')
 
 
 def process_25bp_report(report):
@@ -234,7 +208,8 @@ def process_25bp_report(report):
 
       for i, s in enumerate(curr_splits):
 
-        edits = editops(s, in_oligo)
+        #edits = editops(s, in_oligo)
+        edits = editops(in_oligo, s)
         counts = Counter(x[0] for x in edits)
         strand_ops.append({
           'strand': s,
@@ -243,10 +218,16 @@ def process_25bp_report(report):
 
         if len(s) == 25:
           seq_block[i] = sum(list(dict(counts).values()))
+          if sum(list(dict(counts).values())) == 0:
+            seq_block[i] = 0
 
 
       start_block = find_smallest_sum(seq_block)
-
+      '''
+      if abs(start_block - match_index) > 2:
+        print(val)
+        print(strand_ops)
+      '''
       match_info.append({
         "sequence": val,
         "seq_block_start": start_block,
@@ -305,6 +286,20 @@ def print_table_from_report(report, print_results=True):
 
   ins_info = {'A': 0, 'G': 0, 'C': 0, 'T': 0}
 
+  ins_after_info = {'A': {'A': 0, 'G': 0, 'C': 0, 'T': 0},
+   'G': {'A': 0, 'G': 0, 'C': 0, 'T': 0}, 
+   'C': {'A': 0, 'G': 0, 'C': 0, 'T': 0}, 
+   'T': {'A': 0, 'G': 0, 'C': 0, 'T': 0},
+   'start': {'A': 0, 'G': 0, 'C': 0, 'T': 0}
+  }
+
+  del_after_info = {'A': {'A': 0, 'G': 0, 'C': 0, 'T': 0},
+   'G': {'A': 0, 'G': 0, 'C': 0, 'T': 0}, 
+   'C': {'A': 0, 'G': 0, 'C': 0, 'T': 0}, 
+   'T': {'A': 0, 'G': 0, 'C': 0, 'T': 0},
+   'start': {'A': 0, 'G': 0, 'C': 0, 'T': 0}
+  }
+
   nucleotide_distribution = {'A': 0, 'G': 0, 'C': 0, 'T': 0}
 
   read_distribution = {'A': 0, 'G': 0, 'C': 0, 'T': 0}
@@ -343,11 +338,10 @@ def print_table_from_report(report, print_results=True):
 
       for i, s in enumerate(splits):
 
-        current_strand = s.get('strand', "")
-
         if i < seq_block_start or i - 2 > seq_block_start:
           continue
 
+        current_strand = s.get('strand', "")
 
         total_input_25_length += len(input_oligo)
         input_dist = Counter(input_oligo)
@@ -357,6 +351,7 @@ def print_table_from_report(report, print_results=True):
           nucleotide_distribution[key] += val
 
 
+        #replacements = process_replacements(current_strand, input_oligo)
         replacements = process_replacements(input_oligo, current_strand)
 
         for rep in replacements:
@@ -364,8 +359,10 @@ def print_table_from_report(report, print_results=True):
           rep_type = rep.get('type')
 
           if rep_type == 'insert':
-            key = rep.get('modification').get('insert')
-            ins_info[key] += 1
+            inse = rep.get('modification').get('insert')
+            prev = rep.get('modification').get('after')
+            ins_info[inse] += 1
+            ins_after_info[prev][inse] += 1
 
           elif rep_type == 'replace':
             og = rep.get('modification').get('original')
@@ -373,8 +370,10 @@ def print_table_from_report(report, print_results=True):
             sub_info[og][nw_olg] += 1
 
           else:
-            key = rep.get('modification').get('delete')
-            del_info[key] += 1
+            dele = rep.get('modification').get('delete')
+            prev = rep.get('modification').get('after')
+            del_info[dele] += 1
+            del_after_info[prev][dele] += 1
 
         strand_dist = Counter(current_strand)
         for (key, val) in strand_dist.items():
@@ -400,18 +399,16 @@ def print_table_from_report(report, print_results=True):
 
   if print_results:
 
+    oli_keys = ["A", "G", "C", "T"]
+
     print(f'Nucleotide distribution in inputs')
-    print(f'  A: {nucleotide_distribution["A"]} ({nucleotide_distribution["A"] * 100 / total_input_25_length:.2f}%)')
-    print(f'  C: {nucleotide_distribution["C"]} ({nucleotide_distribution["C"] * 100 / total_input_25_length:.2f}%)')
-    print(f'  G: {nucleotide_distribution["G"]} ({nucleotide_distribution["G"] * 100 / total_input_25_length:.2f}%)')
-    print(f'  T: {nucleotide_distribution["T"]} ({nucleotide_distribution["T"] * 100 / total_input_25_length:.2f}%)')
+    for oli in oli_keys:
+      print(f'  {oli}: {nucleotide_distribution[oli]} ({nucleotide_distribution[oli] * 100 / total_input_25_length:.2f}%)')
 
     print("")
     print(f'Nucleotide distribution in reads')
-    print(f'  A: {read_distribution["A"]} ({read_distribution["A"] * 100/ total_nucleotides:.2f}%)')
-    print(f'  C: {read_distribution["C"]} ({read_distribution["C"] * 100/ total_nucleotides:.2f}%)')
-    print(f'  G: {read_distribution["G"]} ({read_distribution["G"] * 100/ total_nucleotides:.2f}%)')
-    print(f'  T: {read_distribution["T"]} ({read_distribution["T"] * 100/ total_nucleotides:.2f}%)')
+    for oli in oli_keys:
+      print(f'  {oli}: {read_distribution[oli]} ({read_distribution[oli] * 100/ total_nucleotides:.2f}%)')
 
     print("\n")
     print(f'Total errors: {total_errors} ({total_errors * 100/total_nucleotides:.2f}%)')
@@ -424,27 +421,39 @@ def print_table_from_report(report, print_results=True):
       for (key, val) in val.items():
         print(f'    {key}: {val} ({val * 100/ total_for_sub:.2f}%)')
 
+
     print("\n")
     print(f'Insertions: {ins_count} ({ins_count * 100 / total_errors:.2f}%)')
-    print(f'  A: {ins_info["A"]} ({ins_info["A"] * 100/ ins_count:.2f}%)')
-    print(f'  C: {ins_info["C"]} ({ins_info["C"] * 100/ ins_count:.2f}%)')
-    print(f'  G: {ins_info["G"]} ({ins_info["G"] * 100/ ins_count:.2f}%)')
-    print(f'  T: {ins_info["T"]} ({ins_info["T"] * 100/ ins_count:.2f}%)')
 
+    for oli in oli_keys:
+      print(f'  {oli}: {ins_info[oli]} ({ins_info[oli] * 100/ ins_count:.2f}%)')
+    
+    for (key, val) in ins_after_info.items():
+    
+      total_for_ins = sum(val.values())
+      print(f'  Previous nucleotide {key} : {total_for_ins} ({total_for_ins * 100 / ins_count:.2f}%)')
+      for (key, val) in val.items():
+        print(f'    {key}: {val} ({val * 100/ total_for_ins:.2f}%)')
+    
     print("\n")
     print(f'Deletions: {del_count} ({del_count * 100 / total_errors:.2f}%)')
-    print(f'  A: {del_info["A"]} ({del_info["A"] * 100/ del_count:.2f}%)')
-    print(f'  C: {del_info["C"]} ({del_info["C"] * 100/ del_count:.2f}%)')
-    print(f'  G: {del_info["G"]} ({del_info["G"] * 100/ del_count:.2f}%)')
-    print(f'  T: {del_info["T"]} ({del_info["T"] * 100/ del_count:.2f}%)')
-
+    for oli in oli_keys:
+      print(f'  {oli}: {del_info[oli]} ({del_info[oli] * 100/ del_count:.2f}%)')
+    
+    for (key, val) in del_after_info.items():
+    
+      total_for_del = sum(val.values())
+      print(f'  Previous nucleotide {key} : {total_for_del} ({total_for_del * 100 / del_count:.2f}%)')
+      for (key, val) in val.items():
+        print(f'    {key}: {val} ({val * 100/ total_for_del:.2f}%)')
+    
     print("\n")
     for (key, v) in temp.items():
       print(f'Errors in strand {key}')
       for (k, val) in v.items():
         print(f'{k}: {val}')
 
-  return del_info, ins_info, sub_info
+  return del_info, ins_info, sub_info, nucleotide_distribution, read_distribution
 
 
 def process_replacements(str1, str2):
@@ -463,14 +472,16 @@ def process_replacements(str1, str2):
       })
 
     elif op == 'insert':
-      info = {'insert': str2[dpos]}
+      after = str2[dpos - 1] if dpos > 0 else 'start'
+      info = {'insert': str2[dpos], 'after': after}
       temp.append({
         'type': op,
         'modification': info
       })
 
     else:
-      info = {'delete': str1[spos]}
+      after = str1[spos - 1] if spos > 0 else 'start'
+      info = {'delete': str1[spos], 'after': after}
       temp.append({
         'type': op,
         'modification': info
@@ -495,8 +506,9 @@ def read_json(filepath):
 def main():
   
   report = read_json("data/flowcell/report/full_flowcell1.json")
+  process_25bp(report)
   new_report = process_25bp_report(report)
-  #dump_report(new_report, "data/flowcell/report/full_flowcell1_errors.json")
+  #dump_report(new_report, "data/flowcell/report/full_flowcell3_errors.json")
 
   print_table_from_report(new_report)
 
@@ -512,7 +524,7 @@ def main():
   #report = match(input_oligos, read_oligos)
   report = match25bp(temp, read_oligos)
   process_25bp(report)
-  dump_report(report, "data/flowcell/report/full_flowcell3.json")
+  dump_report(report, "data/flowcell/report/full_flowcell3_2.json")
   
 
 if __name__ == "__main__":
