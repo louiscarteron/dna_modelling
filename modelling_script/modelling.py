@@ -1,8 +1,9 @@
 from random import random, randint
 import math
-import collections
+from collections import Counter, Iterable
 import data_config
 import substitution
+import time
 
 debug = True
 
@@ -20,7 +21,21 @@ str2nuc = {
   'C': 3,
 }
 
-base_oligo_length = 113
+base_oligo_length = 64
+
+def encode_binary(str):
+  output = []
+  prev = 0
+  for i, s in enumerate(str):
+    new = ''
+    if s == '0':
+      new = 'A' if i % 2 == 0 else 'T'
+    if s == '1':
+      new = 'G' if i % 2 == 0 else 'C'
+    prev = s
+    output.append(new)
+  return ''.join(output)
+
 
 def generateRandomSequence():
   rand_oligo = [[randint(0, 3) for i in range(140)] for j in range(5)]
@@ -39,6 +54,15 @@ def decode_file():
   
 
   oligos = [[str2nuc[s] for s in oligo] for oligo in str_oligos]
+
+  return oligos 
+
+def read_file(file_name):
+  with open(file_name) as f:
+    str_oligos = f.read().splitlines()
+  
+
+  oligos = [oligo for oligo in str_oligos]
 
   return oligos 
 
@@ -94,13 +118,13 @@ def synthesis(oligos, method):
         continue
       
       new_oligo.append(new_nuc)
-
+    '''
     if debug:
 
       print(f'Sub counter for olgio {i}: {sub_counter}')
       print(f'Ins counter for olgio {i}: {ins_counter}')
       print(f'Del counter for olgio {i}: {del_counter}')
-
+    '''
     syn_oligos.append(new_oligo)
 
     # Used to track metrics 
@@ -116,7 +140,7 @@ def synthesis(oligos, method):
     print(f'Total ins events: {total_ins}. Proportion is: {total_ins / number_of_nuc}. Target is: {ins_rate}')
     print(f'Total del events: {total_del}. Proportion is: {total_del / number_of_nuc}. Target is: {del_rate}')
 
-  return syn_oligos
+  return syn_oligos, total_sub
 
 
 # Data taken from https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0169774
@@ -290,7 +314,7 @@ def storage(oligos, time, redundancy):
   # Probability of one nucleotide decaying in a time frame (1 year)
   r = math.log(2) / 521 
 
-  k = math.exp(41.2 - 15267.6 * (1/290))
+  k = math.exp(41.2 - 15267.6 * (1/283.15))
 
   final_oligos = oligos.copy()
 
@@ -301,7 +325,7 @@ def storage(oligos, time, redundancy):
 
     rnd = random()
 
-    if rnd < r:
+    if rnd < k:
       # 5 is number of decay events to be simulated. Can be changed to fit different environments (hot, cold etc)
       monteCarloDecaySimulation(final_oligos, 5)
 
@@ -315,7 +339,7 @@ def storage(oligos, time, redundancy):
   return final_oligos
 
 def sequence(oligos):
-  pass
+  return oligos
 
 
 def getOligoLengths(item):
@@ -326,7 +350,7 @@ def getOligoLengths(item):
 
 # Helper to flatten a list [a, [b, c]] to [a, b, c]
 def flatten(x):
-  if isinstance(x, collections.Iterable):
+  if isinstance(x, Iterable):
       return [a for i in x for a in flatten(i)]
   else:
       return [x]
@@ -354,11 +378,59 @@ def test():
 
   print(freq)
 
+def count_errors(inputs, outputs):
+  '''
+  err_count = 0
+  for i in range(len(inputs)):
+    if inputs[i] != outputs[i]:
+      err_count += 1
+
+  return err_count
+  '''
+  temp = []
+  for i in range(len(inputs)):
+    c = Counter(inputs[i])
+    c.subtract(Counter(outputs[i]))
+    temp.append(c)
+  
+  return temp
+
+def analyse_output(outputs):
+  lens = [len(o) for o in outputs]
+  print(sum(lens) / len(lens))
+  counter = Counter(lens)
+  print(dict(counter))
+
 def main():
 
-  storage2([], 521, 318)
+  st = "0110111001100001011011100110111101110000011011110111001001100101"
+  #print(encode_binary(st))
 
+  #return
+
+  raw_oligos = decode_file()
+
+  '''
+  subs = []
+
+  for i in range(100):
+    _, total_sub = synthesis(raw_oligos, data_config.average)
+    subs.append(total_sub)
+
+  print(subs)
   return
+  '''
+
+  #oligos = read_file("output.txt")
+  #analyse_output(oligos)
+  #return
+  '''
+  print(encode_binary(st))
+  return
+  '''
+  #storage2([], 521, 318)
+
+  #return
 
   # Used to generate 100 random oligos 
   #oligos = generateRandomOligos(base_oligo_length, 1000)
@@ -369,32 +441,40 @@ def main():
 
   print("Decoding file...")
   raw_oligos = decode_file()
+  #raw_oligos = [encode_binary(st)]
 
-  pcr(raw_oligos, 10)
+  #pcr(raw_oligos, 10)
 
-  return
+  #return
 
   print("Synthesising oligos...")
-  syn_oligos = synthesis(raw_oligos, data_config.average)
+  syn_oligos, _ = synthesis(raw_oligos, data_config.average)
   
   print("Simulating storage...")
   stg_oligos = storage(syn_oligos, 521, 1)
 
   getDecayInformation(stg_oligos)
-  return 
+  #return 
 
   print("Applying PCR...")
-  pcr_oligos = pcr(stg_oligos)
+  #pcr_oligos = pcr(stg_oligos)
+  pcr_oligos = stg_oligos
 
 
   print("Sequencing stored oligos...")
-  fwd_primer = "ATG"
-  rvs_primer = "GCA"
-  seq_oligos = sequence(pcr_oligos, fwd_primer, rvs_primer)
+  #seq_oligos = sequence(pcr_oligos)
+  seq_oligos, _ = synthesis(stg_oligos, data_config.sequencing)
 
   print("Finished")
+
+  encode_file(seq_oligos)
+
+  err = count_errors(raw_oligos, seq_oligos)
+  print(err)
 
 
 
 if __name__ == "__main__":
+  start_time = time.time()
   main()
+  print(f'--- {time.time() - start_time} seconds ---')

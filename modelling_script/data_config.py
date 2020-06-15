@@ -39,3 +39,9 @@ average = {
   'ins_rate': 0.0011,
   'del_rate': 0.0078
 }
+
+sequencing = {
+  'sub_rate': 0.005,
+  'ins_rate': 0.001,
+  'del_rate': 0.004
+}

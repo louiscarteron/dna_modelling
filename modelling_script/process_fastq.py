@@ -146,19 +146,24 @@ def match25bp(input_oligos, read_oligos):
 
   reads = read_oligos.copy()
 
-  for i in input_oligos:
+  short = input_oligos[:100]
+
+  for i in short:
 
     #match25bp = [r for r in reads if i in r or isCloseSubstring(r, i, 90)]
 
     matched25bp = [r for r in reads if i in r]
 
-    #closeMatch = [r for r in reads if isCloseSubstring(r, i, 0.90)]
+    closeMatch = [r for r in reads if len(r) > 90 and isCloseSubstring(i, r, 90)]
 
-    closeMatch = []
-
+    #closeMatch = []
+    
     for m in matched25bp:
       reads.remove(m)
-    
+    '''
+    for c in closeMatch:
+      reads.remove(c)
+    '''
     report.append({
       'input_oligo': i,
       'match': matched25bp,
@@ -178,8 +183,8 @@ def process_25bp(report):
   total_matches = sum([len(r['match']) for r in report])
   print(f'Total Matches: {total_matches}. Overall percentage: {total_matches * 100 / input_size}%')
 
-  #close_matches = sum([len(r['closeMatch']) for r in report])
-  #print(f'Close Matches: {close_matches}. Overall percentage: {close_matches * 100 / input_size}%')
+  close_matches = sum([len(r['closeMatch']) for r in report])
+  print(f'Close Matches: {close_matches}. Overall percentage: {close_matches * 100 / input_size}%')
 
 
 def process_25bp_report(report):
@@ -223,11 +228,11 @@ def process_25bp_report(report):
 
 
       start_block = find_smallest_sum(seq_block)
-      '''
+      
       if abs(start_block - match_index) > 2:
         print(val)
         print(strand_ops)
-      '''
+      
       match_info.append({
         "sequence": val,
         "seq_block_start": start_block,
@@ -325,6 +330,10 @@ def print_table_from_report(report, print_results=True):
     },
   }
 
+  temparr = []
+
+  te123 = {0: 0, 1:0, 2:0}
+
   for r in report:
     matches = r.get('matches', [])
     input_oligo = r.get('input_oligo', "")
@@ -372,6 +381,7 @@ def print_table_from_report(report, print_results=True):
           else:
             dele = rep.get('modification').get('delete')
             prev = rep.get('modification').get('after')
+            temparr.append(rep.get('seq3'))
             del_info[dele] += 1
             del_after_info[prev][dele] += 1
 
@@ -382,6 +392,9 @@ def print_table_from_report(report, print_results=True):
         total_nucleotides += len(current_strand)
         
         editops = s.get('editops', {})
+
+        if editops == {}:
+          te123[seq_count] += 1
 
         sub_count += editops.get('replace', 0)
         ins_count += editops.get('insert', 0)
@@ -439,6 +452,8 @@ def print_table_from_report(report, print_results=True):
     print(f'Deletions: {del_count} ({del_count * 100 / total_errors:.2f}%)')
     for oli in oli_keys:
       print(f'  {oli}: {del_info[oli]} ({del_info[oli] * 100/ del_count:.2f}%)')
+
+    #print(Counter(temparr))
     
     for (key, val) in del_after_info.items():
     
@@ -452,6 +467,8 @@ def print_table_from_report(report, print_results=True):
       print(f'Errors in strand {key}')
       for (k, val) in v.items():
         print(f'{k}: {val}')
+
+    print(te123)
 
   return del_info, ins_info, sub_info, nucleotide_distribution, read_distribution
 
@@ -482,9 +499,13 @@ def process_replacements(str1, str2):
     else:
       after = str1[spos - 1] if spos > 0 else 'start'
       info = {'delete': str1[spos], 'after': after}
+
+      seq3 = str1[spos - 1: spos + 2] if spos > 0 else 'start'
+
       temp.append({
         'type': op,
-        'modification': info
+        'modification': info,
+        'seq3': seq3
       })
 
   return temp
@@ -504,7 +525,7 @@ def read_json(filepath):
   return data
 
 def main():
-  
+  '''
   report = read_json("data/flowcell/report/full_flowcell1.json")
   process_25bp(report)
   new_report = process_25bp_report(report)
@@ -513,6 +534,7 @@ def main():
   print_table_from_report(new_report)
 
   return
+  '''
   
 
   #trim_inputs(90, 150, 10)
@@ -520,11 +542,11 @@ def main():
   input_oligos = _read_csv("data/3xr6.csv")
   temp = _stripOligos(input_oligos)
   #read_oligos = _read_input("data/42k2b/trimmed/42k2b_porechop_nomiddle_q10.fastq", "fastq")
-  read_oligos = _read_input("data/flowcell/data/pc_nm_flowcell_3.fasta", "fasta")
+  read_oligos = _read_input("data/flowcell/data/pc_nm_flowcell_2.fasta", "fasta")
   #report = match(input_oligos, read_oligos)
   report = match25bp(temp, read_oligos)
   process_25bp(report)
-  dump_report(report, "data/flowcell/report/full_flowcell3_2.json")
+  dump_report(report, "data/flowcell/report/flowcell2_fuzzy.json")
   
 
 if __name__ == "__main__":

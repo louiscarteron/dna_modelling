@@ -5,6 +5,9 @@ from Levenshtein import distance, editops
 from collections import Counter
 import json
 from process_fastq import print_table_from_report, process_25bp_report, _get_length_distribution, _get_score_distribution
+from scipy.optimize import curve_fit
+from scipy.special import factorial
+from scipy.stats import poisson
 
 def read_json(filepath):
   with open(filepath) as fp:
@@ -13,40 +16,45 @@ def read_json(filepath):
   return data
 
 def stacked():
-  '''
-  a_scores = [deletions[0]['A'] * 100 / total_1, deletions[1]['A'] * 100 / total_2, deletions[2]['A'] * 100 / total_3]
-  c_scores = [deletions[0]['C'] * 100 / total_1, deletions[1]['C'] * 100 / total_2, deletions[2]['C'] * 100 / total_3]
-  g_scores = [deletions[0]['G'] * 100 / total_1, deletions[1]['G'] * 100 / total_2, deletions[2]['G'] * 100 / total_3]
-  t_scores = [deletions[0]['T'] * 100 / total_1, deletions[1]['T'] * 100 / total_2, deletions[2]['T'] * 100 / total_3]
+
+  plt.style.use('seaborn-colorblind')
+  
+  inserts = [4.4, 4.4, 4.5]
+  deletes = [5.4, 5.2, 5.3]
+  subs    = [9.6, 9.9, 10.0]
 
   width = 0.35
 
   ind = [0, 1, 2]
 
-  temp1 = np.add(a_scores, c_scores).tolist()
-  temp2 = np.add(temp1, g_scores).tolist()
+  temp1 = np.add(subs, deletes).tolist()
 
   
-  p1 = plt.bar(ind, a_scores, width)
-  p2 = plt.bar(ind, c_scores, width, bottom=a_scores)
-  p3 = plt.bar(ind, g_scores, width, bottom=temp1)
-  p4 = plt.bar(ind, t_scores, width, bottom=temp2)
+  p1 = plt.bar(ind, subs, width)
+  p2 = plt.bar(ind, deletes, width, bottom=subs)
+  p3 = plt.bar(ind, inserts, width, bottom=temp1)
 
   labels=['Flowcell 1', 'Flowcell 2', 'Flowcell 3']
   x = [0, 1, 2]
 
   plt.xticks(x, labels)
-  plt.ylabel('Probability (%)')
-  plt.title('Nucleotide Deletion for Flowcell 1, 2, 3')
+  plt.ylabel('Error Probability (%)')
+  plt.title('Error Probability (%) per nucleotide for Flowcell 1, 2, 3')
+
+  axes = plt.gca()
+  axes.set_ylim([0,30])
+
+  lines_x = [0.5, 1.5]
+  for xc in lines_x:
+    axes.axvline(x=xc, color="0.8")
 
   
-  plt.legend((p1[0], p2[0], p3[0], p4[0]), ('A', 'C', 'G', 'T'), bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+  plt.legend((p1[0], p2[0], p3[0]), ('Substitutions', 'Deletes', 'Inserts'), bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
-  plt.savefig("test2.png", bbox_inches="tight")
+  plt.savefig("graphs/test3.png", bbox_inches="tight")
 
   return
-  '''
-  pass
+  #pass
 
 def graph_distribution(distribution, title, file_name):
   
@@ -162,6 +170,92 @@ def graph_deletions(deletions):
 
   plt.savefig("graphs/deletions4.png", bbox_inches="tight")
 
+def graph_subs2(substitutions):
+
+  labels = ['A', 'G', 'C', 'T']
+
+  total_1 = np.sum([list(a.values()) for a in substitutions[0].values()])
+  total_2 = np.sum([list(a.values()) for a in substitutions[1].values()])
+  total_3 = np.sum([list(a.values()) for a in substitutions[2].values()])
+
+  '''
+  for (key, val) in sub_info.items():
+    
+      total_for_sub = sum(val.values())
+  '''
+
+  mod_data1 = {
+    'Flowcell1': [sum(val.values()) * 100/ total_1 for val in substitutions[0].values()],
+    'Flowcell2': [sum(val.values()) * 100/ total_2 for val in substitutions[1].values()],
+    'Flowcell3': [sum(val.values()) * 100/ total_3 for val in substitutions[2].values()]
+  }
+
+  tags = substitutions[0].keys()
+  plt.style.use('seaborn-colorblind')
+
+  fig, ax = plt.subplots()
+  bar_plot(ax, mod_data1, total_width=.8, single_width=.9)
+
+  x = [0, 1, 2, 3]
+
+  lines_x = [0.5, 1.5, 2.5]
+  for xc in lines_x:
+    ax.axvline(x=xc, color="0.8")
+
+  #tick_spacing_y = 0.01
+
+  #ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_y))
+  #for label in ax.get_yticklabels()[1::2]:
+  #  label.set_visible(False)
+
+  plt.xticks(x, labels)
+  plt.ylabel('Proportion (%)')
+  plt.title('Nucleotide substituted out for Flowcell 1, 2, 3')
+
+  plt.savefig("graphs/subbedOut.png", bbox_inches="tight")
+
+def graph_subs3(substitutions):
+
+  labels = ['A', 'G', 'C', 'T']
+
+  temp1 = [sum([list(val.values())[i] for val in substitutions[0].values()]) for i in range(4)]
+  temp2 = [sum([list(val.values())[i] for val in substitutions[1].values()]) for i in range(4)]
+  temp3 = [sum([list(val.values())[i] for val in substitutions[2].values()]) for i in range(4)]
+
+  total_1 = sum(temp1)
+  total_2 = sum(temp2)
+  total_3 = sum(temp3)
+
+  mod_data1 = {
+    'Flowcell1': [i * 100 / total_1 for i in temp1],
+    'Flowcell2': [i * 100 / total_2 for i in temp2],
+    'Flowcell3': [i * 100 / total_3 for i in temp3]
+  }
+
+  tags = substitutions[0].keys()
+  plt.style.use('seaborn-colorblind')
+
+  fig, ax = plt.subplots()
+  bar_plot(ax, mod_data1, total_width=.8, single_width=.9)
+
+  x = [0, 1, 2, 3]
+
+  lines_x = [0.5, 1.5, 2.5]
+  for xc in lines_x:
+    ax.axvline(x=xc, color="0.8")
+
+  #tick_spacing_y = 0.01
+
+  #ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing_y))
+  #for label in ax.get_yticklabels()[1::2]:
+  #  label.set_visible(False)
+
+  plt.xticks(x, labels)
+  plt.ylabel('Proportion (%)')
+  plt.title('Nucleotide substituted in for Flowcell 1, 2, 3')
+
+  plt.savefig("graphs/subbedIn.png", bbox_inches="tight")
+
 def graph_substitutions(substitutions):
 
   total_1 = np.sum([list(a.values()) for a in substitutions[0].values()])
@@ -228,9 +322,11 @@ def process_reports(reports):
     in_distribution.append(in_dist)
     read_distribution.append(read_dist)
 
-  graph_deletions(deletions)
-  graph_insertions(insertions)
-  graph_substitutions(substitutions)
+  #graph_deletions(deletions)
+  #graph_insertions(insertions)
+  #graph_substitutions(substitutions)
+  graph_subs2(substitutions)
+  graph_subs3(substitutions)
 
   #graph_distribution(in_distribution, "Nucleotide Distribution for Matched Inputs", "indist")
   #graph_distribution(read_distribution, "Nucleotide Distribution for Matched Reads", "redist")
@@ -421,7 +517,60 @@ def graph_lengths():
 def graph_scores():
   pass
 
+def fit_function(k, lamb):
+    '''poisson function, parameter lamb is the fit parameter'''
+    return poisson.pmf(k, lamb)
+
+def temp():
+  s = [66, 57, 66, 64, 45, 57, 87, 66, 59, 59, 65, 82, 69, 62, 64, 55, 76, 58, 63, 62, 68, 63, 62, 68, 69, 79, 58, 63, 47, 67, 43, 53, 58, 66, 53, 52, 71, 60, 75, 53, 50, 67, 66, 65, 71, 62, 65, 60, 59, 59, 57, 68, 60, 58, 61, 56, 65, 58, 50, 53, 66, 71, 56, 68, 69, 71, 70, 62, 62, 61, 56, 59, 55, 57, 54, 54, 64, 64, 41, 61, 59, 61, 73, 67, 54, 49, 60, 58, 79, 56, 67, 67, 64, 61, 62, 60, 70, 70, 49, 68]
+  count, bins, ignored = plt.hist(s)
+
+  plt.savefig("graphs/poisson.png")
+
+def temp2():
+  #s1 = np.random.poisson(61, 100)
+
+  t = np.arange(0, 100, 0.1)
+  d = np.exp(-61.44)*np.power(61.44, t)/factorial(t)
+
+  plt.style.use('seaborn-pastel')
+
+
+  s = [66, 57, 66, 64, 45, 57, 87, 66, 59, 59, 65, 82, 69, 62, 64, 55, 76, 58, 63, 62, 68, 63, 62, 68, 69, 79, 58, 63, 47, 67, 43, 53, 58, 66, 53, 52, 71, 60, 75, 53, 50, 67, 66, 65, 71, 62, 65, 60, 59, 59, 57, 68, 60, 58, 61, 56, 65, 58, 50, 53, 66, 71, 56, 68, 69, 71, 70, 62, 62, 61, 56, 59, 55, 57, 54, 54, 64, 64, 41, 61, 59, 61, 73, 67, 54, 49, 60, 58, 79, 56, 67, 67, 64, 61, 62, 60, 70, 70, 49, 68]
+
+  #s = [72, 61, 57, 54, 73, 68, 66, 63, 55, 49, 64, 50, 53, 55, 61, 66, 61, 66, 56, 59, 62, 53, 60, 62, 54, 61, 64, 61, 48, 52, 49, 63, 66, 73, 56, 64, 67, 63, 80, 57, 66, 54, 61, 62, 44, 59, 66, 70, 45, 64, 54, 57, 62, 66, 70, 76, 55, 62, 41, 73, 57, 60, 68, 60, 62, 61, 52, 61, 56, 67, 70, 58, 65, 65, 56, 58, 66, 60, 58, 54, 64, 67, 54, 59, 55, 49, 60, 57, 62, 51, 62, 62, 56, 67, 60, 60, 66, 63, 62, 58]
+
+  bins = np.arange(100) - 0.5
+
+  count, bin_edge, ignored = plt.hist(s, bins=bins, density=True, label='Substitution Events')
+
+  bin_middles = 0.5 * (bin_edge[1:] + bin_edge[:-1])
+
+  parameters, cov_matrix = curve_fit(fit_function, bin_middles, count)
+
+  x_plot = np.arange(0, 100)
+
+  plt.plot(
+      x_plot,
+      fit_function(x_plot, *parameters),
+      linestyle='--',
+      label='Fit result',
+      linewidth=2.0,
+      color='red'
+  )
+
+  plt.plot(t, d, '--', label='Poisson(61)', linewidth=2.0, color='black')
+
+  plt.legend()
+
+  plt.title('Distribution of Substitution for 100 runs over 100 sequences (128nt)')
+
+  plt.savefig("graphs/poisson3.png", bbox_inches="tight")
+
 def main():
+  temp2()
+  return
+  #stacked()
   #graph_lengths()
   #return
   reports = [read_json(f'data/flowcell/report/full_flowcell{i}.json') for i in range(1, 4)]
