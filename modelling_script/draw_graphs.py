@@ -568,11 +568,6 @@ def temp2():
   plt.savefig("graphs/poisson3.png", bbox_inches="tight")
 
 def main():
-  temp2()
-  return
-  #stacked()
-  #graph_lengths()
-  #return
   reports = [read_json(f'data/flowcell/report/full_flowcell{i}.json') for i in range(1, 4)]
   process_reports(reports)
 

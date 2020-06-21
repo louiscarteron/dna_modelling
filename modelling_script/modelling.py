@@ -23,6 +23,8 @@ str2nuc = {
 
 base_oligo_length = 64
 
+'''Temp function for testing encoding'''
+
 def encode_binary(str):
   output = []
   prev = 0
@@ -94,12 +96,12 @@ def synthesis(oligos, method):
     del_counter = 0
 
     new_oligo = []
-    '''
-    Need to go through each nucleotide and decide what to do with them. 
-    TODO: encode conditional probability for substitution and addition.
-    Defaulting to A (0) for now. 
-    '''
+
     for nuc in oligo:
+
+      # Early termination 
+      if random() < 0.0005:
+        break
 
       new_nuc = nuc
 
@@ -109,7 +111,7 @@ def synthesis(oligos, method):
         sub_counter += 1
 
       elif random() < ins_rate:
-        new_oligo.append(0) # Adding new nucleotide. TODO: need to choose which one to add from condition probability distrubution. 
+        new_oligo.append(0) # Adding new nucleotide. 
         ins_counter += 1
 
       elif random() < del_rate:
@@ -263,8 +265,6 @@ def generateRandomOligos(length, total):
 
 
 
-
-
 def monteCarloDecaySimulation(oligos, decayEvents):
 
   for i in range(decayEvents):
@@ -282,25 +282,6 @@ def monteCarloDecaySimulation(oligos, decayEvents):
 
     else:
       print("Should have broken an already broken strand")
-
-# Temp must be in kelvins
-def storage2(oligos, time, temp):
-
-  length = 120
-  
-  r = math.exp(41.2 - 15267.6 * (1/temp))
-  dt = 1
-
-  t = 0
-  decay = 0
-  while t < time:
-    for _ in range(length):
-      if random() < r:
-        decay +=  1
-
-    t += dt
-  
-  print(decay)
 
 
 # Time is in years to keep units consistent. 
@@ -338,8 +319,66 @@ def storage(oligos, time, redundancy):
 
   return final_oligos
 
-def sequence(oligos):
-  return oligos
+def sequence(oligos, method):
+  seq_oligos = []
+
+  sub_rate, ins_rate, del_rate = method.values()
+
+  total_sub = 0
+  total_ins = 0
+  total_del = 0
+  
+  # Going through each oligo to synthesis
+  for i, oligo in enumerate(oligos):
+
+    sub_counter = 0
+    ins_counter = 0
+    del_counter = 0
+
+    new_oligo = []
+
+    for nuc in oligo:
+
+      new_nuc = nuc
+
+      if random() < sub_rate:
+        new_nuc = substitution.getSubNucleotide(nuc, 'average')
+
+        sub_counter += 1
+
+      elif random() < ins_rate:
+        new_oligo.append(0) # Adding new nucleotide.
+        ins_counter += 1
+
+      elif random() < del_rate:
+        del_counter += 1
+        # About to delete the nucleotide, so we can just ignore it and not add it to the new oligo
+        continue
+      
+      new_oligo.append(new_nuc)
+    '''
+    if debug:
+
+      print(f'Sub counter for olgio {i}: {sub_counter}')
+      print(f'Ins counter for olgio {i}: {ins_counter}')
+      print(f'Del counter for olgio {i}: {del_counter}')
+    '''
+    seq_oligos.append(new_oligo)
+
+    # Used to track metrics 
+    total_sub += sub_counter
+    total_ins += ins_counter
+    total_del += del_counter
+
+  if debug:
+
+    number_of_nuc = base_oligo_length * len(oligos)
+
+    print(f'Total sub events: {total_sub}. Proportion is: {total_sub / number_of_nuc}. Target is: {sub_rate}')
+    print(f'Total ins events: {total_ins}. Proportion is: {total_ins / number_of_nuc}. Target is: {ins_rate}')
+    print(f'Total del events: {total_del}. Proportion is: {total_del / number_of_nuc}. Target is: {del_rate}')
+
+  return seq_oligos
 
 
 def getOligoLengths(item):
@@ -403,49 +442,11 @@ def analyse_output(outputs):
 
 def main():
 
-  st = "0110111001100001011011100110111101110000011011110111001001100101"
-  #print(encode_binary(st))
+  #st = "0110111001100001011011100110111101110000011011110111001001100101"
 
-  #return
-
-  raw_oligos = decode_file()
-
-  '''
-  subs = []
-
-  for i in range(100):
-    _, total_sub = synthesis(raw_oligos, data_config.average)
-    subs.append(total_sub)
-
-  print(subs)
-  return
-  '''
-
-  #oligos = read_file("output.txt")
-  #analyse_output(oligos)
-  #return
-  '''
-  print(encode_binary(st))
-  return
-  '''
-  #storage2([], 521, 318)
-
-  #return
-
-  # Used to generate 100 random oligos 
-  #oligos = generateRandomOligos(base_oligo_length, 1000)
-  #print(len(oligos))
-  #return
-
-  #test()
 
   print("Decoding file...")
   raw_oligos = decode_file()
-  #raw_oligos = [encode_binary(st)]
-
-  #pcr(raw_oligos, 10)
-
-  #return
 
   print("Synthesising oligos...")
   syn_oligos, _ = synthesis(raw_oligos, data_config.average)
@@ -456,14 +457,16 @@ def main():
   getDecayInformation(stg_oligos)
   #return 
 
+  '''
   print("Applying PCR...")
   #pcr_oligos = pcr(stg_oligos)
-  pcr_oligos = stg_oligos
+  '''
 
+  pcr_oligos = stg_oligos
 
   print("Sequencing stored oligos...")
   #seq_oligos = sequence(pcr_oligos)
-  seq_oligos, _ = synthesis(stg_oligos, data_config.sequencing)
+  seq_oligos = sequence(stg_oligos, data_config.sequencing)
 
   print("Finished")
 
