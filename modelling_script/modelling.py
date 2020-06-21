@@ -21,7 +21,7 @@ str2nuc = {
   'C': 3,
 }
 
-base_oligo_length = 64
+base_oligo_length = 120
 
 '''Temp function for testing encoding'''
 
