@@ -9,5 +9,6 @@
 *.fastq
 
 *.json
+!example_report.json
 
 **/graphs
